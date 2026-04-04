@@ -1,0 +1,67 @@
+
+watch_dir: ./data/watch
+output_torrent_dir: ./data/torrents
+processed_dir: ./data/processed
+log_dir: ./logs
+db_path: ./data/processed_files.json
+
+tracker_urls:
+  - http://open.acgtracker.com:1096/announce
+  - http://nyaa.tracker.wf:7777/announce
+  - http://opentracker.acgnx.se/announce
+  - udp://tr.bangumi.moe:6969/announce
+  - http://tr.bangumi.moe:6969/announce
+  - udp://208.67.16.113:8000/announce
+  - http://208.67.16.113:8000/announce
+  - http://tracker.ktxp.com:6868/announce
+  - http://tracker.ktxp.com:7070/announce
+  - http://t2.popgo.org:7456/annonce
+  - udp://bt.sc-ol.com:2710/announce
+  - http://share.camoe.cn:8080/announce
+  - http://61.154.116.205:8000/announce
+  - http://bt.rghost.net:80/announce
+  - udp://tracker.openbittorrent.com:80/announce
+  - udp://tracker.publicbt.com:80/announce
+  - udp://tracker.prq.to:80/announce
+  - http://open.nyaatorrents.info:6544/announce
+  - http://t.acg.rip:6699/announce
+  - http://tracker.openbittorrent.com:80/announce
+  - http://tracker.publicbt.com:80/announce
+  - http://tracker.prq.to/announce
+  - udp://104.238.198.186:8000/announce
+  - http://104.238.198.186:8000/announce
+  - http://94.228.192.98/announce
+  - http://share.dmhy.org/annonuce
+  - http://tracker.btcake.com/announce
+  - http://btfile.sdo.com:6961/announce
+  - https://t-115.rhcloud.com/only_for_ylbud
+  - http://exodus.desync.com:6969/announce
+  - udp://coppersurfer.tk:6969/announce
+  - http://tracker3.torrentino.com/announce
+  - http://tracker2.torrentino.com/announce
+  - udp://open.demonii.com:1337/announce
+  - udp://tracker.ex.ua:80/announce
+  - http://pubt.net:2710/announce
+  - http://tracker.tfile.me/announce
+  - http://bigfoot1942.sektori.org:6969/announce
+  - http://t.nyaatracker.com/announce
+  - http://bt.sc-ol.com:2710/announce
+
+okp_path: null
+okp_setting_path: null
+okp_cookies_path: null
+okp_timeout: 300
+okp_auto_confirm: true
+okp_preview_only: true
+
+video_extensions:
+  - .mkv
+  - .mp4
+  - .avi
+
+# ========== Web 面板配置 ==========
+web_enabled: true
+web_host: "0.0.0.0"   # 监听地址（0.0.0.0 = 所有网卡）
+web_port: 8080         # 端口号
+
+
