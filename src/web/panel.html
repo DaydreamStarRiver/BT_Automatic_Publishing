@@ -3,11 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BT 发布控制台</title>
+<title>BT 发布控制台 v2.2</title>
 <style>
-/* ═══════════════════════════════════════════════
-   CSS 变量 — 主题系统
-   ═══════════════════════════════════════════════ */
 :root, [data-theme="dark"] {
   --bg-primary: #0f1117; --bg-secondary: #1a1d27; --bg-tertiary: #232733;
   --bg-card: #1c1f2b; --bg-input: #161820; --bg-hover: #2a2e3b;
@@ -41,23 +38,6 @@
   --scrollbar-thumb: #c0c4cf; --scrollbar-track: transparent;
 }
 
-[data-theme="parchment"] {
-  --bg-primary: #f4e4bc; --bg-secondary: #faf0d5; --bg-tertiary: #ede0c3;
-  --bg-card: #faf5e6; --bg-input: #efe0b8; --bg-hover: #e8d9a8;
-  --border: #d4c48a; --border-focus: #8b6914;
-  --text-primary: #3d3425; --text-secondary: #6b5d3f; --text-muted: #9a8a68;
-  --accent: #8b6914; --accent-hover: #a07c18; --accent-dim: rgba(139,105,20,.15);
-  --success: #4a7c23; --success-bg: rgba(74,124,35,.1);
-  --warning: #b8860b; --warning-bg: rgba(184,134,11,.1);
-  --error: #a52a2a; --error-bg: rgba(165,42,42,.1);
-  --info: #2e5a8a; --info-bg: rgba(46,90,138,.1);
-  --shadow-sm: 0 1px 3px rgba(60,40,10,.12); --shadow-md: 0 4px 16px rgba(60,40,10,.15);
-  --log-bg: #efe0b8; --log-border: #d4c48a;
-  --chip-bg: rgba(139,105,20,.12); --chip-text: #6b5010;
-  --scrollbar-thumb: #c4b080; --scrollbar-track: transparent;
-}
-
-/* ═══ 基础 Reset ═══ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; height: 100%; }
 body {
@@ -74,8 +54,7 @@ body {
   flex-shrink: 0; height: 52px; background: var(--bg-secondary); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 100;
 }
-.topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em;
-  white-space: nowrap; color: var(--text-primary); }
+.topbar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
 .topbar .spacer { flex: 1; }
 .topbar-stats { display: flex; gap: 12px; align-items: center; }
 .stat-pill {
@@ -86,7 +65,6 @@ body {
 .stat-pill.error { background: var(--error-bg); color: var(--error); }
 .stat-pill.warn { background: var(--warning-bg); color: var(--warning); }
 
-/* ═══ 主题切换按钮 ═══ */
 .theme-switcher { display: flex; gap: 2px; background: var(--bg-tertiary); border-radius: 20px; padding: 2px; }
 .theme-btn {
   width: 30px; height: 26px; border: none; border-radius: 17px; cursor: pointer;
@@ -113,10 +91,11 @@ body {
 .task-search {
   width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--bg-input); color: var(--text-primary); font-size: .82rem; outline: none;
-  transition: border-color .2s;
+  transition: border-color .2s; margin-top: 10px;
 }
 .task-search:focus { border-color: var(--border-focus); }
 .task-list { flex: 1; overflow-y: auto; padding: 8px; }
+
 .task-item {
   padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 4px;
   border: 1px solid transparent; transition: all .15s; position: relative;
@@ -128,14 +107,27 @@ body {
   font-size: .83rem; font-weight: 600; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; max-width: 230px;
 }
-.task-item-meta { font-size: .72rem; color: var(--text-muted); margin-top: 3px; }
-.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-  margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
+.task-item-meta { font-size: .72rem; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.pending { background: var(--text-muted); }
 .status-dot.running { background: var(--warning); animation: pulse 1.2s infinite; }
 .status-dot.success { background: var(--success); }
 .status-dot.failed { background: var(--error); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ═══ 文件信息卡片 ═══ */
+.file-info-card { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-tertiary); }
+.info-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.info-value { font-size: .82rem; color: var(--text-primary); word-break: break-all; margin-bottom: 4px; }
+.info-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: .77rem; }
+.info-row .label { color: var(--text-muted); }
+.info-row .value { color: var(--text-primary); font-weight: 500; }
+.chips-area { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.param-chip {
+  font-size: .71rem; padding: 3px 8px; border-radius: 4px;
+  background: var(--chip-bg); color: var(--chip-text); font-weight: 600;
+  font-family: 'Cascadia Code','Consolas',monospace;
+}
 
 /* ═══ 中间：发布编辑区 ═══ */
 .center-panel {
@@ -165,7 +157,6 @@ body {
 .form-textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
 .form-row { display: flex; gap: 10px; }
 
-/* 芯片标签 (Chip) */
 .chip-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .chip {
   font-size: .74rem; padding: 4px 10px; border-radius: 20px; cursor: pointer;
@@ -175,7 +166,6 @@ body {
 .chip:hover { border-color: var(--accent); color: var(--accent-hover); }
 .chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* 自动填充区域 */
 .autofill-bar {
   display: flex; align-items: center; justify-content: space-between; padding: 8px 0;
   border-bottom: 1px solid var(--border); margin-bottom: 12px;
@@ -188,7 +178,6 @@ body {
 }
 .btn-autofill:hover { background: var(--accent); color: #fff; }
 
-/* Markdown 预览切换 */
 .md-toolbar { display: flex; gap: 6px; margin-bottom: 6px; }
 .md-toggle {
   padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px;
@@ -208,9 +197,8 @@ body {
   border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
 }
 .right-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.right-section:last-child { border-bottom: none; }
+.right-section:last-child { border-bottom: none; flex: 1; display: flex; flex-direction: column; }
 
-/* 站点 Checkbox */
 .site-list { display: flex; flex-direction: column; gap: 6px; }
 .site-check {
   display: flex; align-items: center; gap: 8px; padding: 7px 10px;
@@ -227,7 +215,6 @@ body {
 .site-status.ok { color: var(--success); }
 .site-status.err { color: var(--error); }
 
-/* 开关 */
 .toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .toggle-label { font-size: .81rem; color: var(--text-primary); }
 .toggle-switch {
@@ -241,8 +228,7 @@ body {
 .toggle-switch:checked { background: var(--accent); border-color: var(--accent); }
 .toggle-switch:checked::after { transform: translateX(18px); background: #fff; }
 
-/* 发布按钮组 */
-.publish-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.publish-buttons { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
 .btn-pub {
   width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
   font-size: .85rem; font-weight: 700; cursor: pointer; transition: all .2s;
@@ -256,7 +242,6 @@ body {
 .btn-pub.publish:hover { background: var(--accent-hover); }
 .btn-pub:disabled { opacity: .4; cursor: not-allowed; }
 
-/* 运行状态指示器 */
 .run-status {
   padding: 10px; border-radius: var(--radius-sm); text-align: center; font-size: .8rem;
   font-weight: 600; margin-top: 8px; display: none;
@@ -288,11 +273,6 @@ body {
   background: transparent; color: var(--text-muted); font-size: .7rem; cursor: pointer;
 }
 .log-clear-btn:hover { color: var(--error); border-color: var(--error); }
-.log-resize-handle {
-  height: 4px; cursor: ns-resize; background: var(--border);
-  flex-shrink: 0; transition: background .15s;
-}
-.log-resize-handle:hover { background: var(--accent); }
 .log-output {
   flex: 1; overflow-y: auto; padding: 8px 12px; font-family: 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
   font-size: .75rem; line-height: 1.6; white-space: pre-wrap; word-break: break-all; color: var(--text-secondary);
@@ -303,21 +283,7 @@ body {
 .log-level-warn { color: var(--warning); font-weight: 600; }
 .log-level-error { color: var(--error); font-weight: 600; }
 
-/* ═══ 文件信息卡片（左侧详情）═ ═══ */
-.file-info-card { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-.info-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-.info-value { font-size: .82rem; color: var(--text-primary); word-break: break-all; }
-.info-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: .77rem; }
-.info-row .label { color: var(--text-muted); }
-.info-row .value { color: var(--text-primary); font-weight: 500; }
-
-.chips-area { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.param-chip {
-  font-size: .71rem; padding: 3px 8px; border-radius: 4px;
-  background: var(--chip-bg); color: var(--chip-text); font-weight: 600; font-family: 'Cascadia Code','Consolas',monospace;
-}
-
-/* ═══ 空态 / 加载态 ═══ */
+/* ═══ 空态 ═══ */
 .empty-state {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; color: var(--text-muted); padding: 30px; text-align: center;
@@ -336,7 +302,6 @@ body {
   box-shadow: var(--shadow-md); width: 640px; max-width: 92vw; max-height: 85vh;
   display: flex; flex-direction: column; overflow: hidden;
 }
-[data-theme="parchment"] .modal-box { box-shadow: 0 8px 32px rgba(60,40,10,.25); }
 .modal-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .modal-head h3 { font-size: .95rem; font-weight: 700; }
 .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; padding: 4px; line-height: 1; }
@@ -355,8 +320,7 @@ body {
 .toast-container { position: fixed; top: 60px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 8px; }
 .toast {
   padding: 10px 18px; border-radius: var(--radius-sm); font-size: .82rem; font-weight: 500;
-  box-shadow: var(--shadow-md); animation: slideIn .25s ease-out; max-width: 380px;
-  color: #fff;
+  box-shadow: var(--shadow-md); animation: slideIn .25s ease-out; max-width: 380px; color: #fff;
 }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--error); }
@@ -364,7 +328,6 @@ body {
 .toast.warning { background: var(--warning); }
 @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
 
-/* ═══ 响应式 ═══ */
 @media (max-width: 1100px) {
   .sidebar-left { width: 240px; }
   .sidebar-right { width: 250px; }
@@ -386,113 +349,101 @@ body {
   <div class="theme-switcher">
     <button class="theme-btn active" data-t="light" title="☀️ 白天模式">☀️</button>
     <button class="theme-btn" data-t="dark" title="🌙 黑夜模式">🌙</button>
-    <button class="theme-btn" data-t="parchment" title="📜 羊皮纸模式">📜</button>
   </div>
 </header>
 
 <!-- ═════ Main Body ═════ -->
 <div class="main-body">
 
-  <!-- ═══ 左侧：任务列表 + 文件信息 ═══ -->
+  <!-- ═══ 左侧：任务列表 ═══ -->
   <aside class="sidebar-left">
     <div class="sidebar-header">
       <strong>📋 任务列表</strong>
-      <input class="task-search" id="taskSearch" placeholder="搜索任务..." />
     </div>
-    <div class="task-list" id="taskList">
-      <!-- 动态填充 -->
-    </div>
+    <input class="task-search" id="taskSearch" placeholder="搜索任务..." oninput="onSearchInput(this.value)" />
+    <div class="task-list" id="taskList"></div>
 
     <!-- 文件信息卡片 -->
     <div class="file-info-card" id="fileInfoCard" style="display:none">
       <div class="info-label">📂 文件信息</div>
-      <div class="info-value" id="fiName" style="font-weight:600;margin-bottom:6px"></div>
+      <div class="info-value" id="fiName" style="font-weight:600;margin-bottom:8px"></div>
       <div class="info-row"><span class="label">大小</span><span class="value" id="fiSize"></span></div>
-      <div class="info-row"><span class="label">路径</span><span class="value" id="fiPath" style="font-size:.72rem;color:var(--text-muted)"></span></div>
-      <div style="margin-top:8px">
-        <div class="info-label" style="margin-bottom:4px">🎥 视频参数</div>
-        <div class="chips-area" id="fiVideoChips"></div>
-      </div>
-      <div style="margin-top:8px">
-        <div class="info-label" style="margin-bottom:4px">📦 Torrent</div>
-        <div class="info-row"><span class="label">大小</span><span class="value" id="fiTorrentSize"></span></div>
-        <div class="info-row"><span class="label">文件数</span><span class="value" id="fiFileCount"></span></div>
-        <div class="info-row"><span class="label">路径</span><span class="value" id="fiTorrentPath" style="font-size:.7rem;word-break:break-all"></span></div>
-      </div>
-      <!-- 种子上传区域 -->
-      <div style="margin-top:10px">
-        <div class="info-label" style="margin-bottom:4px">⬆️ 上传种子</div>
-        <div id="torrentUploadArea">
-          <input type="file" id="torrentFileInput" accept=".torrent" style="display:none" onchange="onTorrentFileSelected(this)"/>
-          <button class="btn-autofill" id="btnUploadTorrent" onclick="$('torrentFileInput').click()" style="font-size:.72rem;padding:4px 10px">
-            📤 上传 .torrent
-          </button>
-          <span id="torrentUploadStatus" style="font-size:.7rem;margin-left:6px;color:var(--text-muted)"></span>
-        </div>
-      </div>
+      <div class="info-row"><span class="label">路径</span><span class="value" id="fiPath" style="font-size:.72rem;word-break:break-all"></span></div>
+      <div class="info-label" style="margin-top:10px">🎬 视频参数</div>
+      <div class="chips-area" id="fiVideoChips"></div>
+      <div class="info-label" style="margin-top:10px">📁 Torrent</div>
+      <div class="info-row"><span class="label">大小</span><span class="value" id="fiTorrentSize"></span></div>
+      <div class="info-row"><span class="label">文件数</span><span class="value" id="fiFileCount"></span></div>
+      <div class="info-value" id="fiTorrentPath" style="font-size:.72rem;word-break:break-all;margin-top:4px"></div>
     </div>
   </aside>
 
   <!-- ═══ 中间：发布编辑区 ═══ -->
-  <main class="center-panel">
+  <section class="center-panel">
     <div class="center-scroll" id="centerScroll">
+      <!-- 空状态 -->
       <div class="empty-state" id="emptyState">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-        <p>从左侧选择一个任务<br/>开始编辑发布信息</p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12h6m-3-3v6m-7 4h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        <p>请从左侧选择一个任务<br/>加载发布信息</p>
       </div>
 
+      <!-- 发布表单区域 -->
       <div id="publishFormArea" style="display:none">
-        <!-- ====== 基础信息 ====== -->
-        <div class="section-title"><span class="section-icon">📝</span>基础信息</div>
         <div class="autofill-bar">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button class="btn-autofill" onclick="doAutoFill()">✨ 自动填充</button>
-            <span style="color:var(--text-muted);font-size:.78rem">|</span>
-            <select id="templateSelect" onchange="onTemplateSelected()" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text-primary);font-size:.78rem;max-width:160px;outline:none">
-              <option value="">📋 应用模板…</option>
-            </select>
-            <button class="btn-autofill" onclick="openSaveTemplateModal()" style="font-size:.72rem;padding:4px 10px">💾 保存模板</button>
-          </div>
+          <span>✨ 自动填充（从文件名/元数据解析）</span>
+          <button class="btn-autofill" onclick="doAutoFill()">🚀 立即填充</button>
         </div>
+
+        <!-- 基本信息 -->
+        <div class="section-title"><span class="section-icon">📝</span> 基本信息</div>
         <div class="form-grid">
           <div class="form-group full-width">
-            <label class="form-label">标题 <span class="hint">(必填)</span></label>
-            <input class="form-input" id="piTitle" placeholder="输入发布标题..." oninput="onFormInput()"/>
+            <label class="form-label">标题 <span class="hint">（发布标题）</span></label>
+            <input class="form-input" id="piTitle" placeholder="[Group] Title - 01 [Resolution][Codec][Source]" oninput="onFormInput()"/>
           </div>
           <div class="form-group full-width">
-            <label class="form-label">副标题 <span class="hint">(可选)</span></label>
-            <input class="form-input" id="piSubtitle" placeholder="副标题 / Episode 信息..." oninput="onFormInput()"/>
+            <label class="form-label">副标题 <span class="hint">（可选）</span></label>
+            <input class="form-input" id="piSubtitle" placeholder="副标题/英文名/中文名" oninput="onFormInput()"/>
           </div>
           <div class="form-group">
             <label class="form-label">发布组</label>
-            <input class="form-input" id="piGroup" placeholder="[GroupName]" oninput="onFormInput()"/>
+            <input class="form-input" id="piGroup" placeholder="例如: LoliHouse" oninput="onFormInput()"/>
           </div>
           <div class="form-group">
-            <label class="form-label">海报 URL</label>
-            <input class="form-input" id="piPoster" placeholder="https://..." oninput="onFormInput()"/>
+            <label class="form-label">分类</label>
+            <select class="form-select" id="piCategory" onchange="onCategoryChange();onFormInput()">
+              <option value="">-- 选择分类 --</option>
+              <option value="Anime">Anime</option>
+              <option value="Music">Music</option>
+              <option value="Raw">Raw</option>
+              <option value="Software">Software</option>
+              <option value="Game">Game</option>
+              <option value="Literature">Literature</option>
+            </select>
           </div>
         </div>
 
-        <!-- ====== 媒体信息（自动解析）====== -->
-        <div class="section-title" style="margin-top:18px"><span class="section-icon">🎬</span>媒体信息 <small style="font-weight:400;text-transform:none;color:var(--text-muted)">(可编辑)</small></div>
+        <!-- 媒体信息 -->
+        <div class="section-title"><span class="section-icon">🎬</span> 媒体信息</div>
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label">来源</label>
             <select class="form-select" id="piSource" onchange="onFormInput()">
-              <option value="">— 选择 —</option>
+              <option value="">-- 选择来源 --</option>
               <option value="WEB">WEB</option>
-              <option value="BD">Blu-ray (BD)</option>
-              <option value="TV">TV</option>
+              <option value="BD">BD / BluRay</option>
               <option value="DVD">DVD</option>
+              <option value="TV">TV</option>
               <option value="Raw">Raw</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">分辨率</label>
             <select class="form-select" id="piRes" onchange="onFormInput()">
-              <option value="">— 选择 —</option>
-              <option value="2160p">2160p (4K)</option>
-              <option value="1440p">1440p</option>
+              <option value="">-- 选择分辨率 --</option>
+              <option value="4K">4K (2160p)</option>
               <option value="1080p">1080p</option>
               <option value="720p">720p</option>
               <option value="480p">480p</option>
@@ -501,9 +452,9 @@ body {
           <div class="form-group">
             <label class="form-label">视频编码</label>
             <select class="form-select" id="piVCodec" onchange="onFormInput()">
-              <option value="">— 选择 —</option>
-              <option value="H265">H.265 / HEVC</option>
-              <option value="H264">H.264 / AVC</option>
+              <option value="">-- 选择编码 --</option>
+              <option value="H264">H264 / AVC</option>
+              <option value="H265">H265 / HEVC</option>
               <option value="VP9">VP9</option>
               <option value="AV1">AV1</option>
             </select>
@@ -511,195 +462,142 @@ body {
           <div class="form-group">
             <label class="form-label">音频编码</label>
             <select class="form-select" id="piACodec" onchange="onFormInput()">
-              <option value="">— 选择 —</option>
-              <option value="FLAC">FLAC</option>
+              <option value="">-- 选择音频 --</option>
               <option value="AAC">AAC</option>
+              <option value="FLAC">FLAC</option>
               <option value="AC3">AC3</option>
               <option value="DTS">DTS</option>
-              <option value="Opus">Opus</option>
               <option value="MP3">MP3</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group full-width">
             <label class="form-label">字幕类型</label>
             <select class="form-select" id="piSub" onchange="onFormInput()">
-              <option value="">— 选择 —</option>
+              <option value="">-- 选择字幕 --</option>
               <option value="内嵌">内嵌字幕</option>
               <option value="外挂">外挂字幕</option>
+              <option value="内嵌+外挂">内嵌+外挂</option>
               <option value="无">无字幕</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">分类</label>
-            <select class="form-select" id="piCategory" onchange="onCategoryChange();onFormInput()">
-              <option value="">— 选择 —</option>
-              <option value="Anime">Anime</option>
-              <option value="Music">Music</option>
-              <option value="Raw">Raw</option>
-              <option value="Other">Other</option>
-            </select>
+        </div>
+
+        <!-- 标签 -->
+        <div class="section-title"><span class="section-icon">🏷️</span> 标签</div>
+        <div class="form-group">
+          <label class="form-label">选择分类标签（可多选）</label>
+          <div class="chip-container" id="tagChips">
+            <span class="chip" data-tag="Anime" onclick="toggleTag(this)">Anime</span>
+            <span class="chip" data-tag="Collection" onclick="toggleTag(this)">Collection</span>
+            <span class="chip" data-tag="OVA" onclick="toggleTag(this)">OVA</span>
+            <span class="chip" data-tag="Movie" onclick="toggleTag(this)">Movie</span>
+            <span class="chip" data-tag="BD" onclick="toggleTag(this)">BD</span>
+            <span class="chip" data-tag="TV" onclick="toggleTag(this)">TV</span>
+            <span class="chip" data-tag="RAW" onclick="toggleTag(this)">RAW</span>
+            <span class="chip" data-tag="Hi10P" onclick="toggleTag(this)">Hi10P</span>
+            <span class="chip" data-tag="HDR" onclick="toggleTag(this)">HDR</span>
+            <span class="chip" data-tag="SDR" onclick="toggleTag(this)">SDR</span>
           </div>
         </div>
 
-        <!-- ====== 标签（多选 Chip）====== -->
-        <div class="section-title" style="margin-top:18px"><span class="section-icon">🏷️</span>标签 <small style="font-weight:400;text-transform:none;color:var(--text-muted)">(多选)</small></div>
-        <div class="chip-container" id="tagChips">
-          <span class="chip" data-tag="Anime" onclick="toggleTag(this)">Anime</span>
-          <span class="chip" data-tag="Music" onclick="toggleTag(this)">Music</span>
-          <span class="chip" data-tag="Collection" onclick="toggleTag(this)">Collection</span>
-          <span class="chip" data-tag="Raw" onclick="toggleTag(this)">Raw</span>
-          <span class="chip" data-tag="HD" onclick="toggleTag(this)">HD</span>
-          <span class="chip" data-tag="HDR" onclick="toggleTag(this)">HDR</span>
-          <span class="chip" data-tag="Hi10P" onclick="toggleTag(this)">Hi10P</span>
-          <span class="chip" data-tag="DoVi" onclick="toggleTag(this)">DoVi</span>
-          <span class="chip" data-tag="Atmos" onclick="toggleTag(this)">Atmos</span>
-          <span class="chip" data-tag="Lossless" onclick="toggleTag(this)">Lossless</span>
-          <span class="chip" data-tag="Dual Audio" onclick="toggleTag(this)">Dual Audio</span>
+        <!-- 海报 & 关于 -->
+        <div class="section-title"><span class="section-icon">🖼️</span> 附加信息</div>
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label class="form-label">海报链接 <span class="hint">（动漫花园专用）</span></label>
+            <input class="form-input" id="piPoster" placeholder="https://....jpg" oninput="onFormInput()"/>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">关于/联系方式 <span class="hint">（Nyaa专用）</span></label>
+            <input class="form-input" id="piAbout" placeholder="About / Contact info" oninput="onFormInput()"/>
+          </div>
         </div>
 
-        <!-- ====== 简介（Markdown）====== -->
-        <div class="section-title" style="margin-top:18px"><span class="section-icon">📄</span>简介</div>
+        <!-- 简介 -->
+        <div class="section-title"><span class="section-icon">📄</span> 发布简介</div>
         <div class="md-toolbar">
-          <button class="md-toggle active" id="mdEditBtn" onclick="switchMD('edit')">✏️ 编辑</button>
-          <button class="md-toggle" id="mdPrevBtn" onclick="switchMD('preview')">👁️ 预览</button>
+          <button class="md-toggle active" id="mdEditBtn" onclick="switchMD('edit')">编辑</button>
+          <button class="md-toggle" id="mdPrevBtn" onclick="switchMD('preview')">预览</button>
         </div>
-        <textarea class="form-textarea" id="piDescEdit" placeholder="Markdown 格式简介...&#10;&#10;## 概要&#10;&#10;- 要点1&#10;- 要点2" oninput="onDescInput()" spellcheck="false"></textarea>
+        <textarea class="form-textarea" id="piDescEdit" placeholder="使用 Markdown 格式填写发布内容..." oninput="onDescInput()" style="min-height:150px"></textarea>
         <div class="md-preview" id="piDescPreview" style="display:none"></div>
-
-        <!-- ====== 关于（Nyaa 专用）====== -->
-        <div class="section-title" style="margin-top:18px"><span class="section-icon">ℹ️</span>关于 / 联系方式</div>
-        <input class="form-input" id="piAbout" placeholder="联系方式、说明文字等..." style="margin-bottom:20px" oninput="onFormInput()"/>
       </div>
     </div>
-  </main>
+  </section>
 
   <!-- ═══ 右侧：发布控制区 ═══ -->
   <aside class="sidebar-right">
     <div class="right-section">
-      <div class="section-title" style="border:none;padding:0;margin-bottom:10px"><span class="section-icon">🌐</span>站点选择</div>
-      <div class="site-list" id="siteList">
-        <!-- 动态填充 -->
-      </div>
+      <div class="section-title"><span class="section-icon">🌐</span> 发布站点</div>
+      <div class="site-list" id="siteList"></div>
     </div>
 
     <div class="right-section">
-      <div class="section-title" style="border:none;padding:0;margin-bottom:10px"><span class="section-icon">⚙️</span>发布选项</div>
+      <div class="section-title"><span class="section-icon">⚙️</span> 发布选项</div>
       <div class="toggle-wrap">
-        <span class="toggle-label">自动确认 (Auto Confirm)</span>
+        <span class="toggle-label">自动确认</span>
         <input type="checkbox" class="toggle-switch" id="optAutoConfirm" checked/>
       </div>
-      <p style="font-size:.72rem;color:var(--text-muted);margin-top:4px">开启后 OKP 将自动跳过确认步骤直接发布</p>
     </div>
 
     <div class="right-section">
-      <div class="section-title" style="border:none;padding:0;margin-bottom:10px"><span class="section-icon">🎛️</span>操作面板</div>
+      <div class="section-title"><span class="section-icon">🚀</span> 发布操作</div>
       <div class="publish-buttons">
-        <button class="btn-pub preview" id="btnPreview" onclick="doAction('preview')" disabled>
-          👁️ 预览发布
-        </button>
-        <button class="btn-pub dryrun" id="btnDryRun" onclick="doAction('dry_run')" disabled>
-          🔸 试运行 (Dry Run)
-        </button>
-        <button class="btn-pub publish" id="btnPublish" onclick="doAction('publish')" disabled>
-          🚀 正式发布
-        </button>
+        <button class="btn-pub preview" id="btnPreview" onclick="doAction('preview')" disabled>👁️ 预览发布</button>
+        <button class="btn-pub dryrun" id="btnDryRun" onclick="doAction('dry_run')" disabled>🔧 试运行</button>
+        <button class="btn-pub publish" id="btnPublish" onclick="doAction('publish')" disabled>✅ 正式发布</button>
       </div>
       <div class="run-status" id="runStatus"></div>
     </div>
   </aside>
 </div>
 
-<!-- ═════ Log Panel (底部，可拖拽调整高度) ═════ -->
-<div class="log-resize-handle" id="logResizeHandle"></div>
-<div class="log-panel" id="logPanel">
+<!-- ═══ 底部日志区 ═══ -->
+<div class="log-panel">
   <div class="log-header">
-    <strong>📜 日志输出</strong>
+    <strong>📜 运行日志</strong>
     <div class="log-controls">
       <button class="log-filter-btn active" data-lvl="all" onclick="setLogFilter('all')">全部</button>
       <button class="log-filter-btn" data-lvl="INFO" onclick="setLogFilter('INFO')">INFO</button>
-      <button class="log-filter-btn" data-lvl="ERROR" onclick="setLogFilter('ERROR')">ERR</button>
+      <button class="log-filter-btn" data-lvl="WARN" onclick="setLogFilter('WARN')">WARN</button>
+      <button class="log-filter-btn" data-lvl="ERROR" onclick="setLogFilter('ERROR')">ERROR</button>
       <button class="log-clear-btn" onclick="clearLogs()">清空</button>
     </div>
   </div>
   <div class="log-output" id="logOutput"></div>
 </div>
 
-<!-- ═════ Preview Modal ═════ -->
+<!-- ═══ 预览模态框 ═══ -->
 <div class="modal-overlay" id="previewModal">
   <div class="modal-box">
     <div class="modal-head">
       <h3>📋 发布预览</h3>
-      <button class="modal-close" onclick="closeModal('previewModal')">&times;</button>
+      <button class="modal-close" onclick="closePreviewModal()">×</button>
     </div>
     <div class="modal-body" id="previewBody"></div>
     <div class="modal-foot">
-      <button class="modal-close btn-modal" onclick="closeModal('previewModal')">关闭</button>
-      <button class="modal-close btn-modal primary" onclick="closeModal('previewModal')">确定</button>
+      <button class="btn-modal" onclick="closePreviewModal()">关闭</button>
     </div>
   </div>
 </div>
 
-<!-- ═════ Save Template Modal ═════ -->
-<div class="modal-overlay" id="saveTemplateModal">
-  <div class="modal-box" style="width:480px">
-    <div class="modal-head">
-      <h3>💾 保存为模板</h3>
-      <button class="modal-close" onclick="closeModal('saveTemplateModal')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group" style="margin-bottom:12px">
-        <label class="form-label">模板名称 <span style="color:var(--error)">*</span></label>
-        <input class="form-input" id="tmplName" placeholder="例如：Anime WEB 1080p 通用模板"/>
-      </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label class="form-label">分类</label>
-        <select class="form-select" id="tmplCategory" style="width:100%">
-          <option value="">— 选择 —</option>
-          <option value="Anime">Anime</option>
-          <option value="Music">Music</option>
-          <option value="Raw">Raw</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">描述说明</label>
-        <input class="form-input" id="tmplDesc" placeholder="模板用途、适用场景等…"/>
-      </div>
-      <div style="margin-top:12px;padding:8px;background:var(--info-bg);border-radius:var(--radius-sm);font-size:.78rem;color:var(--info)">
-        ℹ️ 将保存当前表单中的所有填写内容（标题、标签、简介、媒体信息等）。空字段不会被保存。
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-modal" onclick="closeModal('saveTemplateModal')">取消</button>
-      <button class="btn-modal primary" onclick="doSaveTemplate()">💾 保存模板</button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast 容器 -->
+<!-- ═══ Toast ═══ -->
 <div class="toast-container" id="toastContainer"></div>
 
-
 <script>
-// ══════════════════════════════════════════════════════════════════════
-//  全局状态
-// ══════════════════════════════════════════════════════════════════════
-const API_BASE = '';
+const API_BASE = '/api';
+const $ = id => document.getElementById(id);
+
 const state = {
   tasks: [],
-  currentTaskId: null,
   sites: [],
+  currentTaskId: null,
+  selectedTags: new Set(),
+  formDirty: false,
   logEntries: [],
   logFilter: 'all',
   isPolling: false,
-  selectedTags: new Set(),
-  formDirty: false,
 };
-
-// ══════════════════════════════════════════════════════════════════════
-//  工具函数
-// ══════════════════════════════════════════════════════════════════════
-const $ = id => document.getElementById(id);
 
 function api(url, opts = {}) {
   return fetch(API_BASE + url, {
@@ -715,13 +613,9 @@ function fmtBytes(bytes) {
   return bytes.toFixed(i === 0 ? 0 : 1) + ' ' + u[i];
 }
 
-function esc(s) { // HTML escape for safe insertion
-  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
-}
+function esc(s) { if (s == null) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function nowStr() {
-  return new Date().toLocaleTimeString('en-US', {hour12:false});
-}
+function nowStr() { return new Date().toLocaleTimeString('en-US', {hour12:false}); }
 
 function toast(msg, type = 'info') {
   const c = $('toastContainer');
@@ -732,19 +626,24 @@ function toast(msg, type = 'info') {
 }
 
 function statusClass(st) {
-  return {'pending':'pending','running':'running','uploading':'running',
+  return {'new':'pending','pending':'pending','running':'running','uploading':'running',
+          'torrent_creating':'running','torrent_created':'pending',
           'success':'success','failed':'failed','permanent_failed':'failed'}[st] || 'pending';
 }
 
 function statusLabel(st) {
-  const m = {'pending':'待处理','running':'运行中','uploading':'上传中',
+  const m = {'new':'新建','pending':'待处理','running':'运行中','uploading':'上传中',
+             'torrent_creating':'生成中','torrent_created':'待发布',
              'success':'成功','failed':'失败','permanent_failed':'永久失败'};
   return m[st] || st;
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  主题系统
-// ══════════════════════════════════════════════════════════════════════
+function rowHTML(label, value) {
+  if (!value && value !== 0) return '';
+  return `<tr><td style="color:var(--text-muted);padding:3px 8px 3px 0;width:100px">${esc(label)}</td><td style="font-weight:500">${esc(String(value))}</td></tr>`;
+}
+
+// ═══ 主题系统 ═══
 (function initTheme() {
   const saved = localStorage.getItem('bt_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
@@ -752,7 +651,6 @@ function statusLabel(st) {
     b.classList.toggle('active', b.dataset.t === saved);
   });
 })();
-
 document.querySelectorAll('.theme-btn').forEach(btn => {
   btn.onclick = () => {
     const t = btn.dataset.t;
@@ -762,12 +660,9 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
   };
 });
 
-// ══════════════════════════════════════════════════════════════════════
-//  日志系统
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 日志系统 ═══
 function addLog(msg, lvl = 'INFO') {
-  const entry = { time: nowStr(), level: lvl, msg };
-  state.logEntries.push(entry);
+  state.logEntries.push({ time: nowStr(), level: lvl, msg });
   renderLog();
 }
 
@@ -791,9 +686,7 @@ function setLogFilter(lvl) {
 
 function clearLogs() { state.logEntries = []; renderLog(); }
 
-// ══════════════════════════════════════════════════════════════════════
-//  站点加载与渲染
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 站点加载 ═══
 async function loadSites() {
   try {
     const d = await api('/api/sites');
@@ -804,14 +697,17 @@ async function loadSites() {
 
 function renderSites() {
   const el = $('siteList');
+  if (!state.sites.length) {
+    el.innerHTML = `<div style="font-size:.78rem;color:var(--text-muted);padding:8px">暂无站点配置</div>`;
+    return;
+  }
   el.innerHTML = state.sites.map(s => `
     <label class="site-check">
-      <input type="checkbox" name="sites" value="${esc(s.name)}"
-        ${s.enabled !== false ? 'checked' : ''} onchange="onSiteChange()"/>
+      <input type="checkbox" name="sites" value="${esc(s.name)}" checked onchange="onSiteChange()"/>
       <div class="site-info">
-        <div class="site-name">${esc(s.name)} (${esc(s.type)})</div>
+        <div class="site-name">${esc(s.name)} <span style="font-size:.7rem;color:var(--text-muted)">(${esc(s.type||'')})</span></div>
         <div class="site-status ${s.has_cookies ? 'ok' : 'err'}">
-          ${s.has_cookies ? '● 已配置 Cookie' : '○ 未登录'}
+          ${s.has_cookies ? '● 已登录' : '○ 未登录'}
         </div>
       </div>
     </label>
@@ -822,12 +718,10 @@ function getSelectedSites() {
   return [...document.querySelectorAll('input[name="sites"]:checked')].map(el => el.value);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  任务系统
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 任务系统 ═══
 async function loadTasks() {
   try {
-    const d = await api('/api/tasks?limit=50&offset=0');
+    const d = await api('/api/tasks?limit=100&offset=0');
     state.tasks = d.tasks || [];
     renderTaskList();
     updateStats(d);
@@ -842,23 +736,26 @@ function renderTaskList(filterText = '') {
     : state.tasks;
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:20px"><p>无匹配任务</p></div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:20px"><p>${f?'无匹配任务':'暂无任务'}</p></div>`;
     return;
   }
 
   el.innerHTML = filtered.map(t => {
     const sc = statusClass(t.status);
     const nm = (t.video_path || '').replace(/\\/g, '/').split('/').pop();
-    return `<div class="task-item ${t.id === state.currentTaskId ? 'active' : ''}"
-                   onclick="selectTask('${t.id}')">
+    return `<div class="task-item ${t.id === state.currentTaskId ? 'active' : ''}" onclick="selectTask('${t.id}')">
       <div style="display:flex;align-items:center">
         <span class="status-dot ${sc}"></span>
         <span class="task-item-name" title="${esc(t.video_path || '')}">${esc(nm || t.id)}</span>
       </div>
-      <div class="task-item-meta">${statusLabel(t.status)} · ${fmtBytes(t.file_size)}</div>
+      <div class="task-item-meta">
+        <span>${statusLabel(t.status)}</span>
+      </div>
     </div>`;
   }).join('');
 }
+
+function onSearchInput(val) { renderTaskList(val); }
 
 function updateStats(d) {
   $('statQueue').textContent = `队列: ${state.tasks.length}`;
@@ -869,11 +766,7 @@ function updateStats(d) {
 async function selectTask(taskId) {
   state.currentTaskId = taskId;
   state.formDirty = false;
-
-  // 更新选中样式
-  document.querySelectorAll('.task-item').forEach(el =>
-    el.classList.toggle('active', el.querySelector('.task-item-name')
-      && (el.textContent.includes(taskId.substring(0,8)))));
+  renderTaskList();
 
   try {
     const task = await api(`/api/tasks/${taskId}`);
@@ -883,7 +776,6 @@ async function selectTask(taskId) {
     showRunStatus(task);
     addLog(`已加载任务: ${task.video_path || taskId}`, 'INFO');
 
-    // 切换到表单视图
     $('emptyState').style.display = 'none';
     $('publishFormArea').style.display = '';
     $('fileInfoCard').style.display = '';
@@ -900,32 +792,32 @@ function enableControls(on) {
   $('btnPublish').disabled = !on;
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  发布表单：填充 & 读取
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 发布表单 ═══
 function fillPublishInfo(task) {
   const p = task.publish_info || {};
+  const vm = task.video_meta || {};
+
   $('piTitle').value = p.title || '';
   $('piSubtitle').value = p.subtitle || '';
   $('piGroup').value = p.group_name || '';
   $('piPoster').value = p.poster || '';
   $('piSource').value = p.source || '';
-  $('piRes').value = task.video_meta?.resolution || p.resolution || '';
-  $('piVCodec').value = task.video_meta?.codec || p.video_codec || '';
+  $('piRes').value = vm.resolution || p.resolution || '';
+  $('piVCodec').value = vm.codec || p.video_codec || '';
   $('piACodec').value = p.audio_codec || '';
   $('piSub').value = p.subtitle_type || '';
   $('piCategory').value = p.category || '';
   $('piAbout').value = p.about || '';
   $('piDescEdit').value = p.description || '';
   $('piDescPreview').textContent = p.description || '(空)';
-  $('optAutoConfirm').checked = true; // 默认开启
+  $('optAutoConfirm').checked = true;
 
-  // Tags
   state.selectedTags.clear();
   if (p.tags) {
     p.tags.split(',').map(s => s.trim()).filter(Boolean).forEach(t => state.selectedTags.add(t));
   }
   renderTags();
+  switchMD('edit');
 }
 
 function getFormData() {
@@ -954,13 +846,11 @@ async function savePubInfo() {
       method: 'PUT', body: JSON.stringify(body),
     });
     state.formDirty = false;
-    addLog('发布信息已保存', 'INFO');
-  } catch (e) { toast('保存失败: ' + e.detail || e.message, 'error'); }
+  } catch (e) { toast('保存失败: ' + (e.detail || e.message), 'error'); }
 }
 
 function onFormInput() { state.formDirty = true; }
 
-// ═══ 标签多选 ═══
 function toggleTag(chip) {
   const tag = chip.dataset.tag;
   if (state.selectedTags.has(tag)) { state.selectedTags.delete(tag); chip.classList.remove('selected'); }
@@ -982,7 +872,6 @@ function onCategoryChange() {
   }
 }
 
-// ═══ Markdown 编辑/预览切换 ═══
 let mdTimer = null;
 function switchMD(mode) {
   const edit = $('piDescEdit'), prev = $('piDescPreview');
@@ -1005,92 +894,75 @@ function onDescInput() {
   }, 300);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  AutoFill 自动填充
-// ══════════════════════════════════════════════════════════════════════
+// ═══ AutoFill ═══
 async function doAutoFill() {
   if (!state.currentTaskId) { toast('请先选择任务', 'warning'); return; }
   addLog('⏳ 正在自动解析...', 'INFO');
   try {
-    const result = await api(`/api/tasks/${state.currentTaskId}/autofill`);
-    // 重新加载以获取更新后的数据
+    await api(`/api/tasks/${state.currentTaskId}/autofill`);
     await selectTask(state.currentTaskId);
-    const msg = result.filled_fields.length > 0
-      ? `已填充 ${result.filled_fields.length} 个字段: ${result.filled_fields.join(', ')}`
-      : '所有字段已有值';
-    toast(msg, result.filled_fields.length > 0 ? 'success' : 'info');
-    addLog(`✅ AutoFill: ${msg}`, 'INFO');
+    toast('自动填充完成', 'success');
+    addLog('✅ AutoFill 完成', 'INFO');
   } catch (e) {
     toast('AutoFill 失败: ' + (e.detail || e.message), 'error');
     addLog(`❌ AutoFill 失败: ${e.detail || e.message}`, 'ERROR');
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  文件信息展示
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 文件信息 ═══
 function fillFileInfo(task) {
   const vm = task.video_meta || {};
+  const tm = task.torrent_meta || {};
   const nm = (task.video_path || '').split(/[/\\]/).pop();
+
   $('fiName').textContent = nm;
-  $('fiSize').textContent = fmtBytes(task.file_size);
+  $('fiSize').textContent = fmtBytes(vm.file_size);
   $('fiPath').textContent = task.video_path || '';
 
-  // 视频参数芯片
   let chips = '';
   if (vm.codec) chips += `<span class="param-chip">${esc(vm.codec)}</span>`;
   if (vm.resolution) chips += `<span class="param-chip">${esc(vm.resolution)}</span>`;
   if (vm.duration_seconds) chips += `<span class="param-chip">${vm.duration_seconds}s</span>`;
   if (vm.width && vm.height) chips += `<span class="param-chip">${vm.width}x${vm.height}</span>`;
-  if (!chips) chips = '<span style="font-size:.75rem;color:var(--text-muted)">暂无视频元数据</span>';
+  if (!chips) chips = '<span style="font-size:.75rem;color:var(--text-muted)">暂无</span>';
   $('fiVideoChips').innerHTML = chips;
 
-  // Torrent（从 torrent_meta 或 video_meta 获取）
-  const tm = task.torrent_meta || {};
-  $('fiTorrentSize').textContent = fmtBytes(tm.size || '');
+  $('fiTorrentSize').textContent = fmtBytes(tm.size);
   $('fiFileCount').textContent = tm.file_count != null ? String(tm.file_count) : '-';
   const tp = task.torrent_path || '';
   $('fiTorrentPath').textContent = tp ? tp.split(/[/\\]/).pop() : '(未生成)';
   $('fiTorrentPath').title = tp;
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  发布操作：预览 / 试运行 / 正式发布
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 发布操作 ═══
 async function doAction(mode) {
   if (!state.currentTaskId) return;
   const sites = getSelectedSites();
-  if (!sites.length && mode !== 'dry_run') {
+  if (!sites.length && mode === 'publish') {
     toast('请至少选择一个发布站点', 'warning'); return;
   }
 
-  // 先保存表单
   await savePubInfo();
 
   const modeNames = { preview: '预览', dry_run: '试运行', publish: '正式发布' };
-  addLog(`▶️ 开始${modeNames[mode]}模式...`, 'INFO');
+  addLog(`▶️ 开始${modeNames[mode]}...`, 'INFO');
   setRunStatus('running', `${modeNames[mode]}中...`);
 
   try {
-    const body = {
-      mode,
-      auto_confirm: $('optAutoConfirm').checked,
-    };
+    const body = { mode, auto_confirm: $('optAutoConfirm').checked };
 
     if (mode === 'preview') {
-      // Preview 使用原有端点
       const result = await api(`/api/tasks/${state.currentTaskId}/preview`, { method: 'POST' });
       showPreviewModal(result);
       setRunStatus('success', `预览完成`);
       addLog('✅ 预览完成', 'INFO');
     } else {
-      // dry_run / publish → okp_run（含多站点列表）
-      body.sites = sites;   // ← 传入选中的站点列表
-      const result = await api(`/api/tasks/${state.currentTaskId}/okp_run`, {
+      body.sites = sites;
+      await api(`/api/tasks/${state.currentTaskId}/okp_run`, {
         method: 'POST', body: JSON.stringify(body),
       });
-      toast(result.message || `${modeNames[mode]}已启动`, mode === 'publish' ? 'info' : 'warning');
-      addLog(`${result.message} (sites: ${sites.join(', ') || '无'})`, 'INFO');
+      toast(`${modeNames[mode]}已启动`, mode === 'publish' ? 'info' : 'warning');
+      addLog(`${modeNames[mode]}已启动 (sites: ${sites.join(', ')||'无'})`, 'INFO');
       startPolling();
     }
   } catch (e) {
@@ -1101,7 +973,6 @@ async function doAction(mode) {
   }
 }
 
-// ═══ 运行状态显示 ═══
 function setRunStatus(status, msg) {
   const el = $('runStatus');
   el.className = `run-status show ${status}`;
@@ -1111,11 +982,10 @@ function setRunStatus(status, msg) {
 function showRunStatus(task) {
   if (!task.okp_result) { $('runStatus').className = 'run-status'; return; }
   const r = task.okp_result;
-  if (r.success) setRunStatus('success', `上次执行成功 (${r.mode})`);
-  else setRunStatus('failed', r.error || '上次执行失败');
+  if (r.success) setRunStatus('success', `上次: 成功 (${r.mode})`);
+  else setRunStatus('failed', r.error || '上次: 失败');
 }
 
-// ═══ 结果轮询（后台执行时等待完成）═══
 function startPolling() {
   if (state.isPolling) return;
   state.isPolling = true;
@@ -1124,24 +994,20 @@ function startPolling() {
     try {
       const task = await api(`/api/tasks/${state.currentTaskId}`);
       showRunStatus(task);
-      // 如果不再在 uploading/running 状态，停止轮询
-      if (!['running','uploading','pending'].includes(task.status)) {
+      if (!['running','uploading','pending','new','torrent_creating'].includes(task.status)) {
         clearInterval(timer);
         state.isPolling = false;
         const sc = statusClass(task.status);
-        setRunStatus(sc, task.status_message || statusLabel(task.status));
-        addLog(`🏁 任务最终状态: ${statusLabel(task.status)} ${task.status_message||''}`, sc==='success'?'INFO':'ERROR');
+        setRunStatus(sc, statusLabel(task.status));
+        addLog(`🏁 任务结束: ${statusLabel(task.status)}`, sc==='success'?'INFO':'ERROR');
         toast(`任务结束: ${statusLabel(task.status)}`, task.status==='success'?'success':'error');
-        // 刷新任务列表
         loadTasks();
       }
     } catch (_) {}
   }, 3000);
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  预览模态框
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 预览模态框 ═══
 function showPreviewModal(data) {
   const pi = data.publish_info || {};
   const vm = data.video_meta || {};
@@ -1156,8 +1022,8 @@ function showPreviewModal(data) {
         ${rowHTML('发布组', pi.group_name)}
         ${rowHTML('分类', pi.category)}
         ${rowHTML('来源', pi.source)}
-        ${rowHTML('分辨率', [pi.resolution, vm.resolution].filter(Boolean).join(' / '))}
-        ${rowHTML('视频编码', [pi.video_codec, vm.codec].filter(Boolean).join(' / '))}
+        ${rowHTML('分辨率', vm.resolution || pi.resolution)}
+        ${rowHTML('视频编码', vm.codec || pi.video_codec)}
         ${rowHTML('音频编码', pi.audio_codec)}
         ${rowHTML('字幕', pi.subtitle_type)}
         ${rowHTML('标签', pi.tags)}
@@ -1174,190 +1040,28 @@ function showPreviewModal(data) {
         ${rowHTML('文件数', ti.file_list ? ti.file_list.length : '-')}
       </table>
     </div>
-    <div style="margin-top:12px;padding:8px;background:var(--info-bg);border-radius:var(--radius-sm);font-size:.8rem;color:var(--info)">
-      ℹ️ 预览模式 — 未执行实际发布
-    </div>
   `;
   $('previewModal').classList.add('show');
 }
 
-function rowHTML(label, val) {
-  return `<tr><td style="padding:4px 8px 4px 0;color:var(--text-muted);white-space:nowrap;font-weight:600">${esc(label)}</td><td style="padding:4px 0;color:var(--text-primary)">${val ? esc(String(val)) : '-'}</td></tr>`;
+function closePreviewModal() {
+  $('previewModal').classList.remove('show');
 }
 
-function closeModal(id) { $(id).classList.remove('show'); }
+function onSiteChange() {}
 
-// 点击遮罩关闭
-$('previewModal').addEventListener('click', e => {
-  if (e.target === $('previewModal')) closeModal('previewModal');
-});
-
-// ══════════════════════════════════════════════════════════════════════
-//  站点变更事件
-// ══════════════════════════════════════════════════════════════════════
-function onSiteChange() {
-  const sites = getSelectedSites();
-  addLog(`已选站点: ${sites.join(', ') || '无'}`, 'INFO');
-}
-
-// ══════════════════════════════════════════════════════════════════════
-//  日志面板拖拽调整高度
-// ══════════════════════════════════════════════════════════════════════
-(function setupLogResize() {
-  const handle = $('logResizeHandle');
-  const panel = $('logPanel');
-  let startY, startH, dragging = false;
-
-  handle.addEventListener('mousedown', e => {
-    dragging = true;
-    startY = e.clientY;
-    startH = panel.offsetHeight;
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
-    e.preventDefault();
-  });
-
-  document.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const delta = startY - e.clientY;
-    panel.style.height = Math.max(80, Math.min(450, startH + delta)) + 'px';
-  });
-
-  document.addEventListener('mouseup', () => {
-    if (dragging) {
-      dragging = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-  });
-})();
-
-// ══════════════════════════════════════════════════════════════════════
-//  搜索过滤
-// ══════════════════════════════════════════════════════════════════════
-$('taskSearch').addEventListener('input', e => {
-  renderTaskList(e.target.value);
-});
-
-// ══════════════════════════════════════════════════════════════════════
-//  种子上传
-// ══════════════════════════════════════════════════════════════════════
-async function onTorrentFileSelected(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (!state.currentTaskId) { toast('请先选择任务', 'warning'); return; }
-
-  $('torrentUploadStatus').textContent = '上传中…';
-  $('btnUploadTorrent').disabled = true;
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const resp = await fetch(`/api/tasks/${state.currentTaskId}/upload_torrent`, {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.detail || '上传失败');
-
-    $('torrentUploadStatus').textContent = `✅ 已上传`;
-    toast(`种子文件 ${file.name} 上传成功`, 'success');
-    addLog(`种子上传成功: ${file.name}`, 'INFO');
-
-    // 重新加载任务以刷新 torrent 信息
-    await selectTask(state.currentTaskId);
-  } catch (e) {
-    $('torrentUploadStatus').textContent = `❌ ${e.message}`;
-    toast('种子上传失败: ' + e.message, 'error');
-    addLog(`种子上传失败: ${e.message}`, 'ERROR');
-  } finally {
-    $('btnUploadTorrent').disabled = false;
-    input.value = '';
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════
-//  模板系统
-// ══════════════════════════════════════════════════════════════════════
-let _cachedTemplates = [];
-
-async function loadTemplates() {
-  try {
-    const data = await api('/api/templates');
-    _cachedTemplates = data.templates || [];
-    renderTemplateSelect();
-  } catch (e) { /* 模板加载失败不影响主流程 */ }
-}
-
-function renderTemplateSelect() {
-  const sel = $('templateSelect');
-  const current = sel.value;
-  sel.innerHTML = `<option value="">📋 应用模板…</option>` +
-    _cachedTemplates.map(t =>
-      `<option value="${t.id}">${esc(t.name)}${t.category ? ` (${esc(t.category)})` : ''}</option>`
-    ).join('');
-  sel.value = current;
-}
-
-async function onTemplateSelected() {
-  const sel = $('templateSelect');
-  const tid = sel.value;
-  if (!tid) return;
-  if (!state.currentTaskId) { toast('请先选择任务', 'warning'); sel.value = ''; return; }
-
-  try {
-    const data = await api(`/api/tasks/${state.currentTaskId}/apply_template/${tid}`, { method: 'POST' });
-    await selectTask(state.currentTaskId);   // 重新加载表单
-    toast(data.message, data.filled_fields?.length > 0 ? 'success' : 'info');
-    addLog(`应用模板: ${data.message}`, 'INFO');
-  } catch (e) {
-    toast('应用模板失败: ' + (e.detail || e.message), 'error');
-  }
-  sel.value = '';
-}
-
-function openSaveTemplateModal() {
-  if (!state.currentTaskId) { toast('请先选择任务', 'warning'); return; }
-  $('tmplName').value = $('piTitle').value.trim() || '';
-  $('tmplCategory').value = $('piCategory').value;
-  $('tmplDesc').value = '';
-  $('saveTemplateModal').classList.add('show');
-}
-
-async function doSaveTemplate() {
-  const name = $('tmplName').value.trim();
-  if (!name) { toast('请输入模板名称', 'warning'); return; }
-
-  try {
-    const body = {
-      name,
-      description: $('tmplDesc').value.trim(),
-      category: $('tmplCategory').value,
-      publish_info: getFormData(),
-    };
-    const data = await api('/api/templates', { method: 'POST', body: JSON.stringify(body) });
-    _cachedTemplates.push(data.template);
-    renderTemplateSelect();
-    closeModal('saveTemplateModal');
-    toast(`模板 '${name}' 已保存`, 'success');
-    addLog(`模板保存成功: ${name}`, 'INFO');
-  } catch (e) {
-    toast('保存模板失败: ' + (e.detail || e.message), 'error');
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════
-//  初始化
-// ══════════════════════════════════════════════════════════════════════
+// ═══ 初始化 ═══
 async function init() {
-  addLog('BT 发布控制台启动中...', 'INFO');
-  await Promise.all([loadTasks(), loadSites(), loadTemplates()]);
-  addLog('就绪 ✅', 'INFO');
+  addLog('BT 发布控制台初始化中...', 'INFO');
+  try {
+    await Promise.all([loadTasks(), loadSites()]);
+    addLog('系统就绪', 'INFO');
+  } catch (e) {
+    addLog(`初始化失败: ${e.message}`, 'ERROR');
+  }
 }
 
 init();
-
 </script>
 </body>
 </html>
