@@ -190,4 +190,4 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 **最后更新：** 2026-04-05  
 **当前版本：** v2.1.0  
-**作者：** BT Auto Publishing Team
+**作者：** DaydreamStarRiver
