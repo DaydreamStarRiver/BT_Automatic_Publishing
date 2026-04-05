@@ -1,3 +1,5 @@
 /.venv
 /.workbuddy
 /logs
+*.mp4
+*.mkv
