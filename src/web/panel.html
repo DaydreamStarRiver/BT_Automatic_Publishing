@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BT 发布控制台</title>
+<style>
+:root,[data-theme="dark"]{
+  --bg-primary:#0f1117;--bg-secondary:#1a1d27;--bg-tertiary:#232733;
+  --bg-card:#1c1f2b;--bg-input:#161820;--bg-hover:#2a2e3b;
+  --border:#2a2e3b;--border-focus:#6366f1;
+  --text-primary:#e4e6ef;--text-secondary:#9498ad;--text-muted:#5e618d;
+  --accent:#6366f1;--accent-hover:#818cf8;--accent-dim:rgba(99,102,241,.15);
+  --success:#22c55e;--success-bg:rgba(34,197,94,.12);
+  --warning:#f59e0b;--warning-bg:rgba(245,158,11,.12);
+  --error:#ef4444;--error-bg:rgba(239,68,68,.12);
+  --info:#3b82f6;--info-bg:rgba(59,130,246,.12);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.25);--shadow-md:0 4px 16px rgba(0,0,0,.35);
+  --radius-sm:6px;--radius-md:10px;--radius-lg:14px;
+  --log-bg:#0a0b10;--log-border:#22253a;
+}
+[data-theme="light"]{
+  --bg-primary:#f5f6fa;--bg-secondary:#fff;--bg-tertiary:#eef0f5;
+  --bg-card:#fff;--bg-input:#f0f1f5;--bg-hover:#e8eaf0;
+  --border:#dde0ea;--border-focus:#6366f1;
+  --text-primary:#1a1d27;--text-secondary:#555b70;--text-muted:#99a0b8;
+  --accent:#4f46e5;--accent-hover:#6366f1;--accent-dim:rgba(79,70,229,.1);
+  --success:#16a34a;--success-bg:rgba(22,163,74,.08);
+  --warning:#d97706;--warning-bg:rgba(217,119,6,.08);
+  --error:#dc2626;--error-bg:rgba(220,38,38,.08);
+  --info:#2563eb;--info-bg:rgba(37,99,235,.08);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 20px rgba(0,0,0,.1);
+  --log-bg:#f8f9fb;--log-border:#dde0ea;
+}
+[data-theme="parchment"]{
+  --bg-primary:#f4e4bc;--bg-secondary:#faf0d5;--bg-tertiary:#ede0c3;
+  --bg-card:#faf5e6;--bg-input:#efe0b8;--bg-hover:#e8d9a8;
+  --border:#d4c48a;--border-focus:#8b6914;
+  --text-primary:#3d3425;--text-secondary:#6b5d3f;--text-muted:#9a8a68;
+  --accent:#8b6914;--accent-hover:#a07c18;--accent-dim:rgba(139,105,20,.15);
+  --success:#4a7c23;--success-bg:rgba(74,124,35,.1);
+  --warning:#b8860b;--warning-bg:rgba(184,134,11,.1);
+  --error:#a52a2a;--error-bg:rgba(165,42,42,.1);
+  --info:#2e5a8a;--info-bg:rgba(46,90,138,.1);
+  --shadow-sm:0 1px 3px rgba(60,40,10,.12);--shadow-md:0 4px 16px rgba(60,40,10,.15);
+  --log-bg:#efe0b8;--log-border:#d4c48a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC',sans-serif;
+  background:var(--bg-primary);color:var(--text-primary);
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;line-height:1.5;
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb,#33364a);border-radius:3px}
+
+/* ═══ TopBar ═══ */
+.topbar{
+  flex-shrink:0;height:52px;background:var(--bg-secondary);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;z-index:100;
+}
+.topbar h1{font-size:1.05rem;font-weight:700;letter-spacing:-.02em;white-space:nowrap;color:var(--text-primary)}
+.topbar .spacer{flex:1}
+.topbar-stats{display:flex;gap:10px;align-items:center}
+.stat-pill{
+  font-size:.72rem;padding:3px 10px;border-radius:20px;font-weight:600;
+  background:var(--bg-tertiary);color:var(--text-secondary);
+}
+.stat-pill.success{background:var(--success-bg);color:var(--success)}
+.stat-pill.error{background:var(--error-bg);color:var(--error)}
+.stat-pill.warn{background:var(--warning-bg);color:var(--warning)}
+.theme-switcher{display:flex;gap:2px;background:var(--bg-tertiary);border-radius:20px;padding:2px}
+.theme-btn{
+  width:30px;height:26px;border:none;border-radius:17px;cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  background:transparent;transition:all .2s;opacity:.45;
+}
+.theme-btn:hover{opacity:.75}
+.theme-btn.active{background:var(--bg-card);box-shadow:var(--shadow-sm);opacity:1}
+
+/* ═══ Main Body ═══ */
+.main-body{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ═══ 左侧边栏 ═══ */
+.sidebar-left{
+  width:280px;flex-shrink:0;background:var(--bg-secondary);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-header{
+  padding:12px 14px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:8px;
+}
+.sidebar-header-top{display:flex;align-items:center;justify-content:space-between}
+.sidebar-header strong{font-size:.85rem;color:var(--text-primary)}
+.task-count{font-size:.7rem;color:var(--text-muted);font-weight:500}
+.task-search{
+  width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-input);color:var(--text-primary);font-size:.8rem;outline:none;
+  transition:border-color .2s;
+}
+.task-search:focus{border-color:var(--border-focus)}
+.task-filter-bar{
+  display:flex;gap:4px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.filter-chip{
+  padding:3px 10px;border-radius:12px;font-size:.7rem;font-weight:600;cursor:pointer;
+  border:1px solid transparent;background:var(--bg-tertiary);color:var(--text-muted);
+  transition:all .15s;white-space:nowrap;
+}
+.filter-chip:hover{border-color:var(--border);color:var(--text-secondary)}
+.filter-chip.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.task-list{flex:1;overflow-y:auto;padding:6px}
+.task-item{
+  padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:3px;
+  border:1px solid transparent;transition:all .15s;background:var(--bg-card);
+}
+.task-item:hover{border-color:var(--border);background:var(--bg-hover)}
+.task-item.active{border-color:var(--accent);background:var(--accent-dim)}
+.task-item-head{display:flex;align-items:center;gap:6px}
+.status-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.status-dot.pending{background:var(--text-muted)}
+.status-dot.running{background:var(--warning);animation:pulse 1.2s infinite}
+.status-dot.success{background:var(--success)}
+.status-dot.failed{background:var(--error)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.task-item-name{
+  font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex:1;min-width:0;
+}
+.task-item-meta{font-size:.7rem;color:var(--text-muted);margin-top:3px;padding-left:14px}
+.task-item-time{font-size:.65rem;color:var(--text-muted);margin-top:2px;padding-left:14px}
+
+/* 文件信息卡片 */
+.file-info-card{
+  padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;
+  background:var(--bg-secondary);
+}
+.fi-section{margin-bottom:10px}
+.fi-section:last-child{margin-bottom:0}
+.fi-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600}
+.fi-name{font-size:.82rem;font-weight:700;color:var(--text-primary);word-break:break-all}
+.fi-row{display:flex;justify-content:space-between;padding:2px 0;font-size:.75rem}
+.fi-row .l{color:var(--text-muted)}
+.fi-row .v{color:var(--text-primary);font-weight:500;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips-area{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.param-chip{
+  font-size:.68rem;padding:2px 7px;border-radius:4px;
+  background:var(--accent-dim);color:var(--accent-hover,#a5b4fc);font-weight:600;
+  font-family:'Cascadia Code','Consolas',monospace;
+}
+.torrent-upload-area{margin-top:8px;display:flex;align-items:center;gap:6px}
+.btn-upload-torrent{
+  padding:4px 10px;border:1px dashed var(--border);border-radius:var(--radius-sm);
+  background:transparent;color:var(--text-secondary);font-size:.7rem;cursor:pointer;
+  transition:all .15s;
+}
+.btn-upload-torrent:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ═══ 中间面板（核心发布区）═══ */
+.center-panel{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  min-width:440px;background:var(--bg-primary);
+}
+.center-scroll{flex:1;overflow-y:auto;padding:16px 20px}
+
+.section-title{
+  font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text-muted);margin-bottom:10px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;
+}
+.section-num{
+  display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+  border-radius:50%;background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;
+}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-label{
+  font-size:.75rem;font-weight:600;color:var(--text-secondary);
+  display:flex;align-items:center;gap:4px;
+}
+.form-label .hint{font-weight:400;font-style:italic;color:var(--text-muted);font-size:.7rem}
+.form-label .auto-badge{
+  font-size:.6rem;padding:1px 5px;border-radius:8px;
+  background:var(--success-bg);color:var(--success);font-weight:700;
+}
+.form-input,.form-select,.form-textarea{
+  padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-input);color:var(--text-primary);font-size:.84rem;
+  outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--border-focus);box-shadow:0 0 0 2px var(--accent-dim);
+}
+.form-textarea{resize:vertical;min-height:100px;line-height:1.6;font-family:inherit}
+
+/* 自动填充工具栏 */
+.autofill-toolbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 0;margin-bottom:4px;border-bottom:1px solid var(--border);
+}
+.btn-autofill{
+  padding:5px 14px;border:1px solid var(--accent);border-radius:20px;
+  background:transparent;color:var(--accent);font-size:.78rem;cursor:pointer;
+  transition:all .2s;font-weight:600;display:flex;align-items:center;gap:4px;
+}
+.btn-autofill:hover{background:var(--accent);color:#fff}
+.template-select-wrap{display:flex;align-items:center;gap:4px}
+.template-select{
+  padding:4px 8px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg-input);color:var(--text-primary);font-size:.76rem;
+  max-width:160px;outline:none;
+}
+.btn-save-tmpl{
+  padding:4px 10px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg-tertiary);color:var(--text-secondary);font-size:.72rem;
+  cursor:pointer;transition:all .15s;
+}
+.btn-save-tmpl:hover{border-color:var(--accent);color:var(--accent)}
+
+/* 标签 Chip */
+.chip-container{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.chip{
+  font-size:.73rem;padding:4px 10px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-secondary);
+  transition:all .15s;user-select:none;white-space:nowrap;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent-hover)}
+.chip.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Markdown 编辑器 */
+.md-toolbar{display:flex;gap:6px;margin-bottom:6px}
+.md-toggle{
+  padding:4px 10px;border:1px solid var(--border);border-radius:4px;
+  background:var(--bg-tertiary);color:var(--text-secondary);font-size:.72rem;
+  cursor:pointer;transition:all .15s;
+}
+.md-toggle.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.md-preview{
+  padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-input);min-height:100px;font-size:.84rem;line-height:1.7;
+  color:var(--text-primary);white-space:pre-wrap;word-break:break-word;
+}
+
+/* 标题匹配模式输入 */
+.pattern-box{
+  background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;margin-bottom:12px;
+}
+.pattern-box-title{
+  font-size:.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;
+  display:flex;align-items:center;gap:4px;
+}
+.pattern-input{
+  width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-input);color:var(--text-primary);font-size:.8rem;
+  font-family:'Cascadia Code','Consolas',monospace;outline:none;
+  transition:border-color .2s;
+}
+.pattern-input:focus{border-color:var(--border-focus)}
+.pattern-hint{
+  font-size:.68rem;color:var(--text-muted);margin-top:4px;line-height:1.5;
+}
+.pattern-preview{
+  margin-top:6px;padding:6px 10px;border-radius:4px;
+  background:var(--bg-input);font-size:.78rem;color:var(--text-secondary);
+  font-family:'Cascadia Code','Consolas',monospace;
+}
+
+/* ═══ 右侧边栏 ═══ */
+.sidebar-right{
+  width:280px;flex-shrink:0;background:var(--bg-secondary);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;
+}
+.right-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.right-section:last-child{border-bottom:none}
+
+.site-list{display:flex;flex-direction:column;gap:5px}
+.site-check{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:var(--radius-sm);border:1px solid transparent;
+  cursor:pointer;transition:all .15s;background:var(--bg-card);
+}
+.site-check:hover{border-color:var(--border);background:var(--bg-hover)}
+.site-check.disabled{opacity:.45;cursor:not-allowed}
+.site-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.site-info{flex:1;min-width:0}
+.site-name{font-size:.81rem;font-weight:600;color:var(--text-primary)}
+.site-status{font-size:.68rem;color:var(--text-muted)}
+.site-status.ok{color:var(--success)}
+.site-status.err{color:var(--error)}
+
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+.toggle-label{font-size:.8rem;color:var(--text-primary)}
+.toggle-switch{
+  position:relative;width:38px;height:21px;appearance:none;
+  background:var(--bg-tertiary);border-radius:11px;cursor:pointer;
+  transition:background .2s;border:1px solid var(--border);
+}
+.toggle-switch::after{
+  content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;
+  background:var(--text-secondary);border-radius:50%;transition:transform .2s;
+}
+.toggle-switch:checked{background:var(--accent);border-color:var(--accent)}
+.toggle-switch:checked::after{transform:translateX(17px);background:#fff}
+
+.publish-buttons{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.btn-pub{
+  width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:.84rem;font-weight:700;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-pub.preview{background:var(--info-bg);color:var(--info);border-color:var(--info)}
+.btn-pub.preview:hover{background:var(--info);color:#fff}
+.btn-pub.dryrun{background:var(--warning-bg);color:var(--warning);border-color:var(--warning)}
+.btn-pub.dryrun:hover{background:var(--warning);color:#fff}
+.btn-pub.publish{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-pub.publish:hover{background:var(--accent-hover)}
+.btn-pub:disabled{opacity:.4;cursor:not-allowed}
+
+.run-status{
+  padding:10px;border-radius:var(--radius-sm);text-align:center;font-size:.8rem;
+  font-weight:600;margin-top:8px;display:none;
+}
+.run-status.show{display:block}
+.run-status.running{background:var(--warning-bg);color:var(--warning)}
+.run-status.success{background:var(--success-bg);color:var(--success)}
+.run-status.failed{background:var(--error-bg);color:var(--error)}
+
+.progress-bar-container{margin-top:8px;display:none}
+.progress-bar-container.show{display:block}
+.progress-bar-track{
+  height:4px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden;
+}
+.progress-bar-fill{
+  height:100%;background:var(--accent);border-radius:2px;
+  transition:width .3s ease;width:0%;
+}
+.progress-bar-fill.running{animation:progress-indeterminate 1.5s ease-in-out infinite}
+@keyframes progress-indeterminate{0%{width:30%}50%{width:70%}100%{width:30%}}
+
+/* ═══ 底部日志区 ═══ */
+.log-panel{
+  flex-shrink:0;height:180px;border-top:1px solid var(--border);
+  background:var(--log-bg);display:flex;flex-direction:column;overflow:hidden;
+}
+.log-resize-handle{
+  height:4px;cursor:ns-resize;background:var(--border);flex-shrink:0;
+  transition:background .15s;
+}
+.log-resize-handle:hover{background:var(--accent)}
+.log-header{
+  padding:7px 16px;border-bottom:1px solid var(--log-border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;background:var(--bg-secondary);
+}
+.log-header strong{font-size:.76rem;color:var(--text-secondary)}
+.log-controls{display:flex;gap:6px;align-items:center}
+.log-btn{
+  padding:2px 8px;border:1px solid var(--border);border-radius:4px;
+  background:transparent;color:var(--text-muted);font-size:.68rem;cursor:pointer;
+}
+.log-btn.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.log-btn.clear:hover{color:var(--error);border-color:var(--error)}
+.log-output{
+  flex:1;overflow-y:auto;padding:8px 12px;
+  font-family:'Cascadia Code','JetBrains Mono','Consolas',monospace;
+  font-size:.73rem;line-height:1.6;white-space:pre-wrap;word-break:break-all;
+  color:var(--text-secondary);
+}
+.log-entry{margin-bottom:1px}
+.log-time{color:var(--text-muted);margin-right:8px}
+.lvl-info{color:var(--info);font-weight:600}
+.lvl-warn{color:var(--warning);font-weight:600}
+.lvl-error{color:var(--error);font-weight:600}
+.lvl-okp{color:var(--success);font-weight:600}
+
+/* ═══ 空态 ═══ */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;color:var(--text-muted);padding:40px 20px;text-align:center;
+}
+.empty-icon{font-size:48px;margin-bottom:14px;opacity:.3}
+.empty-state p{font-size:.88rem;line-height:1.7;max-width:340px}
+.empty-state .sub{font-size:.78rem;color:var(--text-muted);margin-top:8px}
+
+/* ═══ Modal ═══ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);
+}
+.modal-overlay.show{display:flex}
+.modal-box{
+  background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-md);width:680px;max-width:92vw;max-height:85vh;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:.95rem;font-weight:700}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:4px;line-height:1}
+.modal-close:hover{color:var(--error)}
+.modal-body{flex:1;overflow-y:auto;padding:16px 18px}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.btn-modal{
+  padding:7px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:.82rem;cursor:pointer;font-weight:600;transition:all .15s;
+  background:var(--bg-tertiary);color:var(--text-primary);
+}
+.btn-modal.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-modal.primary:hover{background:var(--accent-hover)}
+
+/* ═══ Toast ═══ */
+.toast-container{position:fixed;top:60px;right:20px;z-index:1100;display:flex;flex-direction:column;gap:8px}
+.toast{
+  padding:10px 18px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:500;
+  box-shadow:var(--shadow-md);animation:slideIn .25s ease-out;max-width:380px;color:#fff;
+}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--error)}
+.toast.info{background:var(--info)}
+.toast.warning{background:var(--warning)}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ═══ 响应式 ═══ */
+@media(max-width:1100px){
+  .sidebar-left{width:230px}.sidebar-right{width:240px}.center-panel{min-width:340px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TopBar ═══ -->
+<header class="topbar">
+  <h1>🚀 BT 发布控制台</h1>
+  <div class="spacer"></div>
+  <div class="topbar-stats">
+    <span class="stat-pill" id="statQueue">队列 -</span>
+    <span class="stat-pill success" id="statOk">成功 -</span>
+    <span class="stat-pill error" id="statFail">失败 -</span>
+  </div>
+  <div class="theme-switcher">
+    <button class="theme-btn active" data-t="dark" title="🌙 黑夜模式">🌙</button>
+    <button class="theme-btn" data-t="light" title="☀️ 白天模式">☀️</button>
+    <button class="theme-btn" data-t="parchment" title="📜 羊皮纸模式">📜</button>
+  </div>
+</header>
+
+<!-- ═══ Main Body ═══ -->
+<div class="main-body">
+
+  <!-- ═══ ① 左侧：任务列表 + 文件信息 ═══ -->
+  <aside class="sidebar-left">
+    <div class="sidebar-header">
+      <div class="sidebar-header-top">
+        <strong>📋 任务列表</strong>
+        <span class="task-count" id="taskCount">0 个任务</span>
+      </div>
+    </div>
+    <input class="task-search" id="taskSearch" placeholder="🔍 搜索文件名或任务ID..."/>
+    <div class="task-filter-bar" id="filterBar">
+      <span class="filter-chip active" data-f="all" onclick="setFilter('all')">全部</span>
+      <span class="filter-chip" data-f="pending" onclick="setFilter('pending')">待处理</span>
+      <span class="filter-chip" data-f="running" onclick="setFilter('running')">运行中</span>
+      <span class="filter-chip" data-f="success" onclick="setFilter('success')">成功</span>
+      <span class="filter-chip" data-f="failed" onclick="setFilter('failed')">失败</span>
+    </div>
+    <div class="task-list" id="taskList"></div>
+
+    <!-- 选中任务的文件信息卡片 -->
+    <div class="file-info-card" id="fileInfoCard" style="display:none">
+      <div class="fi-section">
+        <div class="fi-label">📂 文件信息</div>
+        <div class="fi-name" id="fiName"></div>
+        <div class="fi-row"><span class="l">大小</span><span class="v" id="fiSize"></span></div>
+        <div class="fi-row"><span class="l">时长</span><span class="v" id="fiDuration"></span></div>
+      </div>
+      <div class="fi-section">
+        <div class="fi-label">🎬 视频参数</div>
+        <div class="chips-area" id="fiVideoChips"></div>
+      </div>
+      <div class="fi-section">
+        <div class="fi-label">📦 Torrent</div>
+        <div class="fi-row"><span class="l">大小</span><span class="v" id="fiTorrentSize"></span></div>
+        <div class="fi-row"><span class="l">文件数</span><span class="v" id="fiFileCount"></span></div>
+        <div class="fi-row"><span class="l">路径</span><span class="v" id="fiTorrentPath" style="font-size:.68rem;max-width:100%"></span></div>
+        <div class="torrent-upload-area">
+          <input type="file" id="torrentFileInput" accept=".torrent" style="display:none" onchange="onTorrentSelected(this)"/>
+          <button class="btn-upload-torrent" onclick="$('torrentFileInput').click()">📤 上传 .torrent</button>
+          <span id="torrentUploadStatus" style="font-size:.68rem;color:var(--text-muted)"></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ ② 中间：发布编辑区（核心）═══ -->
+  <main class="center-panel">
+    <div class="center-scroll" id="centerScroll">
+
+      <!-- 空态提示 -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📭</div>
+        <p><strong>尚未选择任务</strong></p>
+        <p class="sub">从左侧任务列表中选择一个任务，<br/>或等待监控目录检测到新视频文件后自动创建任务。</p>
+      </div>
+
+      <!-- 发布表单区域 -->
+      <div id="publishFormArea" style="display:none">
+
+        <!-- ─── Step 1: 基础信息 ─── -->
+        <div class="section-title"><span class="section-num">1</span> 📝 基础信息</div>
+        <div class="autofill-toolbar">
+          <button class="btn-autofill" onclick="doAutoFill()">✨ 智能填充</button>
+          <span style="color:var(--text-muted);font-size:.76rem">|</span>
+          <div class="template-select-wrap">
+            <select class="template-select" id="templateSelect" onchange="onTemplateSelected()">
+              <option value="">📋 应用模板…</option>
+            </select>
+          </div>
+          <button class="btn-save-tmpl" onclick="openSaveTemplateModal()">💾 存为模板</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">标题 <span class="hint">(必填，自动生成可修改)</span></label>
+            <input class="form-input" id="piTitle" placeholder="[Group] Title - EP## [Resolution][Codec][Audio][Sub]" oninput="onFormDirty()"/>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">副标题 / Episode 信息 <span class="hint">(可选)</span></label>
+            <input class="form-input" id="piSubtitle" placeholder="Episode information..." oninput="onFormDirty()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">发布组</label>
+            <input class="form-input" id="piGroup" placeholder="[GroupName]" oninput="onFormDirty()"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">海报 URL <span class="hint">(dmhy 必需)</span></label>
+            <input class="form-input" id="piPoster" placeholder="https://..." oninput="onFormDirty()"/>
+          </div>
+        </div>
+
+        <!-- 标题匹配模式（OKPGUI 特性） -->
+        <div class="pattern-box" id="titlePatternBox" style="display:none">
+          <div class="pattern-box-title">🔧 标题匹配模式 <span class="hint">(高级)</span></div>
+          <input class="pattern-input" id="titlePattern" placeholder='[SweetSub] Oniichan ha Oshimai! - &lt;ep&gt; [WebRip][&lt;res&gt;][&lt;codec&gt;][CHS]' oninput="onPatternPreview()"/>
+          <div class="pattern-hint">
+            用 <code>&lt;tag&gt;</code> 标记变量位置，程序会从文件名中提取对应值。<br/>
+            支持的标签：<code>&lt;ep&gt;</code> 集数 · <code>&lt;res&gt;</code> 分辨率 · <code>&lt;codec&gt;</code> 编码 · <code>&lt;group&gt;</code> 发布组
+          </div>
+          <div class="pattern-preview" id="patternPreview"></div>
+        </div>
+
+        <!-- ─── Step 2: 标签系统（OKPGUI标准）── -->
+        <div class="section-title" style="margin-top:20px"><span class="section-num">2</span> �️ Tags <small style="font-weight:400;text-transform:none;color:var(--text-muted)">（以逗号分隔，参考OKP Wiki）</small></div>
+        <input class="form-input" id="piTagsText" placeholder="Anime, HD, Hi10P..." oninput="onTagsTextInput()" style="margin-bottom:8px"/>
+        <div class="chip-container" id="tagChips">
+          <span class="chip" data-tag="Anime" onclick="toggleTag(this)">Anime</span>
+          <span class="chip" data-tag="Music" onclick="toggleTag(this)">Music</span>
+          <span class="chip" data-tag="Collection" onclick="toggleTag(this)">Collection</span>
+          <span class="chip" data-tag="Raw" onclick="toggleTag(this)">Raw</span>
+          <span class="chip" data-tag="HD" onclick="toggleTag(this)">HD</span>
+          <span class="chip" data-tag="HDR" onclick="toggleTag(this)">HDR</span>
+          <span class="chip" data-tag="Hi10P" onclick="toggleTag(this)">Hi10P</span>
+          <span class="chip" data-tag="DoVi" onclick="toggleTag(this)">DoVi</span>
+          <span class="chip" data-tag="Atmos" onclick="toggleTag(this)">Atmos</span>
+          <span class="chip" data-tag="Lossless" onclick="toggleTag(this)">Lossless</span>
+          <span class="chip" data-tag="Dual Audio" onclick="toggleTag(this)">Dual Audio</span>
+          <span class="chip" data-tag="Uncensored" onclick="toggleTag(this)">Uncensored</span>
+        </div>
+
+        <!-- ─── Step 3: 发布内容（OKPGUI标准 - 大区域）── -->
+        <div class="section-title" style="margin-top:20px"><span class="section-num">3</span> 📄 内容 <small style="font-weight:400;text-transform:none;color:var(--text-muted)">（请使用 Markdown 编写）</small></div>
+        <div class="md-toolbar">
+          <button class="md-toggle active" id="mdEditBtn" onclick="switchMD('edit')">✏️ 编辑</button>
+          <button class="md-toggle" id="mdPrevBtn" onclick="switchMD('preview')">👁️ 预览</button>
+        </div>
+        <textarea class="form-textarea" id="piDescEdit"
+          placeholder="## 发布概要&#10;&#10;- 视频源信息&#10;- 制作组说明&#10;- 其他备注"
+          oninput="onDescInput()" spellcheck="false" style="min-height:250px"></textarea>
+        <div class="md-preview" id="piDescPreview" style="display:none;min-height:250px"></div>
+
+      </div><!-- /publishFormArea -->
+    </div>
+  </main>
+
+  <!-- ═══ ③ 右侧：发布控制区 ═══ -->
+  <aside class="sidebar-right">
+    <div class="right-section">
+      <div class="section-title" style="border:none;padding:0;margin-bottom:10px">🌐 发布站点</div>
+      <div class="site-list" id="siteList"></div>
+    </div>
+
+    <div class="right-section">
+      <div class="section-title" style="border:none;padding:0;margin-bottom:10px">⚙️ 发布选项</div>
+      <div class="toggle-wrap">
+        <span class="toggle-label">自动确认</span>
+        <input type="checkbox" class="toggle-switch" id="optAutoConfirm" checked/>
+      </div>
+      <div class="toggle-wrap">
+        <span class="toggle-label">显示标题匹配</span>
+        <input type="checkbox" class="toggle-switch" id="optShowPattern" onchange="togglePatternBox()"/>
+      </div>
+    </div>
+
+    <div class="right-section">
+      <div class="section-title" style="border:none;padding:0;margin-bottom:10px">🚀 执行操作</div>
+      <div class="publish-buttons">
+        <button class="btn-pub preview" id="btnPreview" disabled onclick="doAction('preview')">
+          👁️ 预览发布
+        </button>
+        <button class="btn-pub dryrun" id="btnDryRun" disabled onclick="doAction('dry_run')">
+          🔍 试运行 (Dry Run)
+        </button>
+        <button class="btn-pub publish" id="btnPublish" disabled onclick="doAction('publish')">
+          ⚡ 正式发布
+        </button>
+      </div>
+      <div class="run-status" id="runStatus"></div>
+      <div class="progress-bar-container" id="progressContainer">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ═══ ④ 底部日志区 ═══ -->
+<div class="log-resize-handle" id="logResizeHandle"></div>
+<div class="log-panel" id="logPanel">
+  <div class="log-header">
+    <strong>📋 实时日志</strong>
+    <div class="log-controls">
+      <button class="log-btn active" data-lvl="all" onclick="setLogFilter('all')">全部</button>
+      <button class="log-btn" data-lvl="INFO" onclick="setLogFilter('INFO')">INFO</button>
+      <button class="log-btn" data-lvl="WARN" onclick="setLogFilter('WARN')">WARN</button>
+      <button class="log-btn" data-lvl="ERROR" onclick="setLogFilter('ERROR')">ERROR</button>
+      <button class="log-btn clear" onclick="clearLogs()">清空</button>
+    </div>
+  </div>
+  <div class="log-output" id="logOutput"></div>
+</div>
+
+<!-- ═══ Modal: 预览结果 ═══ -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>👁️ 发布预览</h3>
+      <button class="modal-close" onclick="closeModal('previewModal')">×</button>
+    </div>
+    <div class="modal-body" id="previewBody"></div>
+    <div class="modal-foot">
+      <button class="btn-modal" onclick="closeModal('previewModal')">关闭</button>
+      <button class="btn-modal primary" onclick="closeModal('previewModal');doAction('publish')">⚡ 确认发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Modal: 保存模板 ═══ -->
+<div class="modal-overlay" id="saveTemplateModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>💾 保存模板</h3>
+      <button class="modal-close" onclick="closeModal('saveTemplateModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">模板名称 <span class="hint">(必填)</span></label>
+        <input class="form-input" id="tmplName" placeholder="例: LoliHouse-Anime"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">描述</label>
+        <input class="form-input" id="tmplDesc" placeholder="可选备注…"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">默认分类</label>
+        <input class="form-input" id="tmplCategory" placeholder="Anime"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-modal" onclick="closeModal('saveTemplateModal')">取消</button>
+      <button class="btn-modal primary" onclick="doSaveTemplate()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Toast Container ═══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══ JavaScript ═══ -->
+<script>
+const API_BASE='';
+const $=id=>document.getElementById(id);
+
+const state={
+  tasks:[],currentTaskId:null,sites:[],
+  selectedTags:new Set(),formDirty:false,
+  logEntries:[],logFilter:'all',
+  taskFilter:'all',isPolling:false,
+};
+
+function api(url,opts={}){
+  return fetch(API_BASE+url,Object.assign({headers:{'Content-Type':'application/json'}},opts||{}))
+    .then(r=>r.ok?r.json():r.json().then(d=>Promise.reject(d)));
+}
+function fmtBytes(b){if(!b||b===0)return'-';const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<u.length-1){b/=1020;i++}return b.toFixed(i?1:0)+' '+u[i]}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function nowStr(){return new Date().toLocaleTimeString('en-US',{hour12:false})}
+function toast(msg,type='info'){
+  const c=$('toastContainer'),el=document.createElement('div');
+  el.className=`toast ${type}`;el.textContent=msg;c.appendChild(el);
+  setTimeout(()=>el.remove(),4500);
+}
+function statusClass(s){
+  return{pending:'pending',new:'pending',torrent_creating:'running',torrent_created:'pending',
+         uploading:'running',success:'success',failed:'failed',permanent_failed:'failed'}[s]||'pending';
+}
+function statusLabel(s){
+  const m={new:'新建',pending:'待处理',torrent_creating:'生成种子',torrent_created:'种子就绪',
+           uploading:'上传中',success:'✅ 成功',failed:'❌ 失败',permanent_failed:'永久失败'};
+  return m[s]||s;
+}
+
+(function(){
+  const t=localStorage.getItem('bt_theme')||'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+})();
+document.querySelectorAll('.theme-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    const t=btn.dataset.t;
+    document.documentElement.setAttribute('data-theme',t);
+    localStorage.setItem('bt_theme',t);
+    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  };
+});
+
+/* ═══ 日志系统 ═══ */
+function addLog(msg,lvl='INFO'){state.logEntries.push({time:nowStr(),level:lvl,msg});renderLog()}
+function renderLog(){
+  const out=$('logOutput');
+  const fl=state.logFilter==='all'?state.logEntries:state.logEntries.filter(e=>e.level===state.logFilter);
+  out.innerHTML=fl.map(e=>`<div class="log-entry"><span class="log-time">${esc(e.time)}</span>`+
+    `<span class="lvl-${e.level.toLowerCase()}">${e.level}</span> ${esc(e.msg)}</div>`).join('');
+  out.scrollTop=out.scrollHeight;
+}
+function setLogFilter(l){
+  state.logFilter=l;
+  document.querySelectorAll('.log-btn[data-lvl]').forEach(b=>b.classList.toggle('active',b.dataset.lvl===l));
+  renderLog();
+}
+function clearLogs(){state.logEntries=[];renderLog()}
+
+/* ═══ 站点系统 ═══ */
+async function loadSites(){
+  try{
+    const d=await api('/api/sites');
+    state.sites=d.sites||[];
+    renderSites();
+  }catch(e){addLog(`站点加载失败: ${e.message}`,'ERROR')}
+}
+function renderSites(){
+  $('siteList').innerHTML=state.sites.map(s=>
+    `<label class="site-check${!s.configured?' disabled':''}">
+      <input type="checkbox" name="sites" value="${esc(s.id)}"${s.configured!==false?' checked':''}
+        ${!s.configured?'disabled':''} onchange="onSiteChange()"/>
+      <div class="site-info">
+        <div class="site-name">${esc(s.name)}</div>
+        <div class="site-status ${s.cookies_ok?'ok':'err'}">${s.cookies_ok?'● 已配置 Cookie':'○ 未配置'}</div>
+      </div>
+    </label>`
+  ).join('');
+}
+function getSelectedSites(){return[...document.querySelectorAll('input[name="sites"]:checked')].map(el=>el.value)}
+function onSiteChange(){}
+
+/* ═══ 任务系统 ═══ */
+async function loadTasks(){
+  try{
+    const d=await api('/api/tasks?limit=200&offset=0');
+    state.tasks=d.tasks||[];
+    renderTaskList();
+    updateStats(d);
+  }catch(e){addLog(`任务加载失败: ${e.message}`,'ERROR')}
+}
+function setFilter(f){
+  state.taskFilter=f;
+  document.querySelectorAll('#filterBar .filter-chip').forEach(c=>c.classList.toggle('active',c.dataset.f===f));
+  renderTaskList();
+}
+function renderTaskList(){
+  const el=$('taskList'),ft=state.taskFilter.toLowerCase();
+  let filtered=state.tasks;
+  if(ft!=='all') filtered=filtered.filter(t=>statusClass(t.status).includes(ft));
+  const search=($('taskSearch').value||'').toLowerCase();
+  if(search) filtered=filtered.filter(t=>(t.video_path||'').toLowerCase().includes(search)||t.id.includes(search));
+  $('taskCount').textContent=`${filtered.length} / ${state.tasks.length} 个任务`;
+  if(!filtered.length){el.innerHTML=`<div class="empty-state" style="padding:16px"><p>无匹配任务</p></div>`;return}
+  el.innerHTML=filtered.map(t=>{
+    const sc=statusClass(t.status),nm=(t.video_path||'').replace(/\\/g,'/').split('/').pop();
+    return`<div class="task-item${t.id===state.currentTaskId?' active':''}" onclick="selectTask('${t.id}')">
+      <div class="task-item-head"><span class="status-dot ${sc}"></span><span class="task-item-name" title="${esc(t.video_path||'')}">${esc(nm||t.id)}</span></div>
+      <div class="task-item-meta">${statusLabel(t.status)} · ${fmtBytes(t.file_size||0)}</div>
+      <div class="task-item-time">${(t.updated_at||'').substring(11,19)||''}</div>
+    </div>`;
+  }).join('');
+}
+$('taskSearch').addEventListener('input',()=>renderTaskList());
+function updateStats(d){
+  $('statQueue').textContent=`队列 ${state.tasks.length}`;
+  $('statOk').textContent=`成功 ${d?.stats?.success_count??'-'}`;
+  $('statFail').textContent=`失败 ${d?.stats?.failed_count??'-'}`;
+}
+
+async function selectTask(tid){
+  state.currentTaskId=tid;state.formDirty=false;
+  document.querySelectorAll('.task-item').forEach(el=>el.classList.toggle('active',
+    el.querySelector('.task-item-name')?.textContent.includes(tid.substring(0,8))));
+  try{
+    const task=await api(`/api/tasks/${tid}?full=true`);
+    fillPublishInfo(task);
+    fillFileInfo(task);
+    enableControls(true);
+    showRunStatus(task);
+    $('emptyState').style.display='none';
+    $('publishFormArea').style.display='';
+    $('fileInfoCard').style.display='';
+    addLog(`已加载任务: ${task.video_name||tid}`,'INFO');
+  }catch(e){
+    toast('加载任务失败: '+e.message,'error');enableControls(false);
+  }
+}
+function enableControls(on){
+  $('btnPreview').disabled=!on;$('btnDryRun').disabled=!on;$('btnPublish').disabled=!on;
+}
+
+/* ═══ 表单系统：填充 & 读取（OKPGUI标准） ═══ */
+function fillPublishInfo(task){
+  const p=task.publish_info||{};
+  $('piTitle').value=p.title||'';
+  $('piSubtitle').value=p.subtitle||'';
+  $('piGroup').value=p.group_name||'';
+  $('piPoster').value=p.poster||'';
+  $('piDescEdit').value=p.description||'';
+  $('piDescPreview').innerHTML=renderMarkdown(p.description)||'<span style="color:var(--text-muted)">(空)</span>';
+  $('optAutoConfirm').checked=true;
+
+  state.selectedTags.clear();
+  if(p.tags)p.tags.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>state.selectedTags.add(t));
+  renderTags();
+  syncTagsText();
+}
+function getFormData(){
+  return{
+    title:$('piTitle').value.trim(),subtitle:$('piSubtitle').value.trim(),
+    group_name:$('piGroup').value.trim(),poster:$('piPoster').value.trim(),
+    description:$('piDescEdit').value,
+    tags:[...state.selectedTags].join(', '),
+  };
+}
+async function savePubInfo(){
+  if(!state.currentTaskId)return;
+  try{
+    await api(`/api/tasks/${state.currentTaskId}/publish_info`,{method:'PUT',body:JSON.stringify(getFormData())});
+    state.formDirty=false;addLog('✅ 发布信息已保存','INFO');
+  }catch(e){toast('保存失败: '+(e.detail||e.message),'error')}
+}
+function onFormDirty(){state.formDirty=true}
+
+/* ═══ Tags系统（OKPGUI标准：文本输入+Chip多选） ═══ */
+function toggleTag(chip){
+  const tag=chip.dataset.tag;
+  if(state.selectedTags.has(tag)){state.selectedTags.delete(tag);chip.classList.remove('selected')}
+  else{state.selectedTags.add(tag);chip.classList.add('selected')}
+  state.formDirty=true;
+  syncTagsText();
+}
+function renderTags(){document.querySelectorAll('#tagChips .chip').forEach(c=>c.classList.toggle('selected',state.selectedTags.has(c.dataset.tag)))}
+function syncTagsText(){
+  $('piTagsText').value=[...state.selectedTags].join(', ');
+}
+function onTagsTextInput(){
+  const val=$('piTagsText').value||'';
+  state.selectedTags.clear();
+  val.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>state.selectedTags.add(t));
+  renderTags();
+  state.formDirty=true;
+}
+
+/* ═══ Markdown 编辑 & 预览（OKPGUI标准） ═══ */
+let mdTimer=null;
+function switchMD(mode){
+  const e=$('piDescEdit'),p=$('piDescPreview'),eb=$('mdEditBtn'),pb=$('mdPrevBtn');
+  if(mode==='edit'){
+    e.style.display='';p.style.display='none';
+    eb.classList.add('active');pb.classList.remove('active');
+  }else{
+    e.style.display='none';p.style.display='';
+    p.innerHTML=renderMarkdown(e.value)||'<span style="color:var(--text-muted)">(空)</span>';
+    eb.classList.remove('active');pb.classList.add('active');
+  }
+}
+function onDescInput(){
+  state.formDirty=true;
+  clearTimeout(mdTimer);
+  mdTimer=setTimeout(()=>{
+    const preview=$('piDescPreview');
+    if(preview.style.display!=='none'){
+      preview.innerHTML=renderMarkdown($('piDescEdit').value)||'<span style="color:var(--text-muted)">(空)</span>';
+    }
+  },300);
+}
+function renderMarkdown(text){
+  if(!text)return '';
+  let html=text
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+  html=html
+    .replace(/^### (.*$)/gm,'<h3 style="font-size:1.1em;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</h3>')
+    .replace(/^## (.*$)/gm,'<h2 style="font-size:1.25em;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</h2>')
+    .replace(/^# (.*$)/gm,'<h1 style="font-size:1.4em;font-weight:700;margin:16px 0 10px;color:var(--text-primary)">$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`(.*?)`/g,'<code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:4px;font-size:.85em;font-family:monospace">$1</code>')
+    .replace(/^> (.*$)/gm,'<blockquote style="border-left:3px solid var(--accent);padding-left:12px;margin:8px 0;color:var(--text-secondary);font-style:italic">$1</blockquote>')
+    .replace(/^\- (.*$)/gm,'<li style="margin-left:20px;line-height:1.8">$1</li>')
+    .replace(/^\d+\. (.*$)/gm,'<li style="margin-left:20px;line-height:1.8">$1</li>')
+    .replace(/\n\n/g,'<br/><br/>')
+    .replace(/\n/g,'<br/>');
+  return html;
+}
+
+/* ═══ AutoFill ═══ */
+async function doAutoFill(){
+  if(!state.currentTaskId){toast('请先选择任务','warning');return}
+  addLog('⏳ 正在智能解析文件名和元数据…','INFO');
+  try{
+    const r=await api(`/api/tasks/${state.currentTaskId}/autofill`);
+    await selectTask(state.currentTaskId);
+    const filled=r.filled_fields||[];
+    toast(filled.length?`已填充 ${filled.length} 个字段: ${filled.join(', ')}`:'所有字段已有值',filled.length?'success':'info');
+    addLog(`✅ AutoFill 完成: ${filled.length} 个字段`,'INFO');
+  }catch(e){toast('AutoFill 失败: '+(e.detail||e.message),'error');addLog(`❌ AutoFill 失败: ${e.detail||e.message}`,'ERROR')}
+}
+
+/* ═══ 标题匹配模式 ═══ */
+function togglePatternBox(){$('titlePatternBox').style.display=$('optShowPattern').checked?'':'none'}
+function onPatternPreview(){
+  const pat=$('titlePattern').value;
+  if(!pat){$('patternPreview').textContent='';return}
+  let result=pat.replace(/&lt;(\w+)&gt;/g,(m,k)=>`[${k.toUpperCase()}]`);
+  $('patternPreview').textContent=result;
+}
+
+/* ═══ 文件信息展示 ═══ */
+function fillFileInfo(task){
+  const vm=task.video_meta||{},nm=(task.video_path||'').split(/[/\\]/).pop();
+  $('fiName').textContent=nm;
+  $('fiSize').textContent=fmtBytes(vm.file_size||task.file_size||0);
+  $('fiDuration').textContent=vm.duration_seconds?`${Math.floor(vm.duration_seconds/60)}:${String(vm.duration_seconds%60).padStart(2,'0')}`:'-';
+  let chips='';
+  if(vm.codec)chips+=`<span class="param-chip">${esc(vm.codec)}</span>`;
+  if(vm.resolution)chips+=`<span class="param-chip">${esc(vm.resolution)}</span>`;
+  if(vm.width&&vm.height)chips+=`<span class="param-chip">${vm.width}×${vm.height}</span>`;
+  if(!chips)chips='<span style="font-size:.72rem;color:var(--text-muted)">暂无元数据</span>';
+  $('fiVideoChips').innerHTML=chips;
+  const tm=task.torrent_meta||{};
+  $('fiTorrentSize').textContent=fmtBytes(tm.size||0);
+  $('fiFileCount').textContent=tm.file_count!=null?String(tm.file_count):'-';
+  const tp=task.torrent_path||'';
+  $('fiTorrentPath').textContent=tp?tp.split(/[/\\]/).pop():'(未生成)';
+  $('fiTorrentPath').title=tp;
+}
+
+/* ═══ Torrent 上传 ═══ */
+async function onTorrentSelected(input){
+  if(!input.files.length||!state.currentTaskId)return;
+  const f=input.files[0];
+  try{
+    const buf=await f.arrayBuffer();
+    const b64=btoa(String.fromCharCode(...new Uint8Array(buf)));
+    await api(`/api/tasks/${state.currentTaskId}/upload_torrent`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({filename:f.name,content:b64}),
+    });
+    $('torrentUploadStatus').textContent='✅ 已上传';
+    addLog(`Torrent 已上传: ${f.name}`,'INFO');
+    selectTask(state.currentTaskId);
+  }catch(e){$('torrentUploadStatus').textContent='❌ 失败';toast('上传失败: '+e.message,'error')}
+  input.value='';
+}
+
+/* ═══ 发布操作 ═══ */
+async function doAction(mode){
+  if(!state.currentTaskId)return;
+  const sites=getSelectedSites();
+  if((mode==='publish'||mode==='dry_run')&&!sites.length){toast('请至少选择一个发布站点','warning');return}
+  await savePubInfo();
+  const names={preview:'预览',dry_run:'试运行',publish:'正式发布'};
+  addLog(`▶️ 开始 ${names[mode]} 模式…`,'INFO');
+  setRunStatus('running',`${names[mode]}中…`);
+  showProgress(true,true);
+  try{
+    if(mode==='preview'){
+      const r=await api(`/api/tasks/${state.currentTaskId}/preview`,{method:'POST'});
+      showPreviewModal(r);
+      setRunStatus('success','预览完成');
+      showProgress(false);
+      addLog('✅ 预览完成','INFO');
+    }else{
+      const body={mode,auto_confirm:$('optAutoConfirm').checked};
+      if(mode!=='preview')body.sites=sites;
+      const r=await api(`/api/tasks/${state.currentTaskId}/okp_run`,{method:'POST',body:JSON.stringify(body)});
+      toast(r.message||`${names[mode]}已启动`,mode==='publish'?'info':'warning');
+      addLog(`${r.message} (站点: ${sites.join(', ')||'无'})`,'INFO');
+      startPolling();
+    }
+  }catch(e){
+    const msg=e.detail||e.message;
+    toast(`${names[mode]}失败: ${msg}`,'error');
+    setRunStatus('failed',msg);
+    showProgress(false);
+    addLog(`❌ ${names[mode]}失败: ${msg}`,'ERROR');
+  }
+}
+function setRunStatus(st,msg){
+  const el=$('runStatus');
+  el.className=`run-status show ${st}`;el.textContent=msg;
+}
+function showRunStatus(task){
+  if(!task.okp_result){$('runStatus').className='run-status';showProgress(false);return}
+  const r=task.okp_result;
+  if(r.success)setRunStatus('success',`上次执行成功 (${r.mode})`);
+  else setRunStatus('failed',r.error||'上次执行失败');
+  showProgress(false);
+}
+function showProgress(on,indeterminate=false){
+  const c=$('progressContainer'),f=$('progressFill');
+  c.classList.toggle('show',on);
+  f.classList.toggle('running',indeterminate);
+  if(!on)f.style.width='0%';
+}
+
+/* ═══ 结果轮询 ═══ */
+function startPolling(){
+  if(state.isPolling)return;
+  state.isPolling=true;
+  showProgress(true,true);
+  const timer=setInterval(async()=>{
+    if(!state.currentTaskId){clearInterval(timer);state.isPolling=false;showProgress(false);return}
+    try{
+      const task=await api(`/api/tasks/${state.currentTaskId}`);
+      showRunStatus(task);
+      if(!['new','pending','torrent_creating','torrent_created','uploading'].includes(task.status)){
+        clearInterval(timer);state.isPolling=false;
+        const sc=statusClass(task.status);
+        setRunStatus(sc,statusLabel(task.status)+(task.error_message?' — '+task.error_message:''));
+        showProgress(false);
+        addLog(`🏁 任务完成: ${statusLabel(task.status)} ${task.error_message||''}`,sc==='success'?'INFO':'ERROR');
+        toast(`任务结束: ${statusLabel(task.status)}`,sc==='success'?'success':'error');
+        loadTasks();
+      }
+    }catch(_){}
+  },2500);
+}
+
+/* ═══ 预览 Modal ═══ */
+function rowHTML(k,v){return`<tr><td style="color:var(--text-muted);padding:3px 8px 3px 0;white-space:nowrap;vertical-align:top">${esc(k)}</td><td style="padding:3px 0;word-break:break-all">${esc(v!=null?v:'—')}</td></tr>`}
+function showPreviewModal(data){
+  const pi=data.publish_info||{},vm=data.video_meta||{},ti=data.torrent_info||{};
+  $('previewBody').innerHTML=`
+    <div style="margin-bottom:16px">
+      <div class="fi-label" style="margin-bottom:6px">📝 发布信息</div>
+      <table style="width:100%;font-size:.83rem;border-collapse:collapse">
+        ${rowHTML('标题',pi.title)}${rowHTML('副标题',pi.subtitle)}
+        ${rowHTML('发布组',pi.group_name)}${rowHTML('分类',pi.category)}
+        ${rowHTML('来源',pi.source)}${rowHTML('分辨率',[pi.resolution,vm.resolution].filter(Boolean).join(' / ')||'-')}
+        ${rowHTML('视频编码',[pi.video_codec,vm.codec].filter(Boolean).join(' / ')||'-')}
+        ${rowHTML('音频编码',pi.audio_codec||'-')}${rowHTML('字幕',pi.subtitle_type||'-')}
+        ${rowHTML('标签',pi.tags||'-')}${rowHTML('海报',pi.poster||'-')}
+      </table>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="fi-label" style="margin-bottom:6px">📄 简介</div>
+      <div style="background:var(--bg-input);padding:10px;border-radius:var(--radius-sm);white-space:pre-wrap;font-size:.82rem;line-height:1.65;max-height:200px;overflow-y:auto">${esc(pi.description||'(空)')}</div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div class="fi-label" style="margin-bottom:6px">ℹ️ 关于</div>
+      <div style="font-size:.82rem;color:var(--text-secondary)">${esc(pi.about||'(空)')}</div>
+    </div>
+    <div>
+      <div class="fi-label" style="margin-bottom:6px">📦 Torrent 信息</div>
+      <table style="width:100%;font-size:.83rem;border-collapse:collapse">
+        ${rowHTML('名称',ti.name||'-')}${rowHTML('总大小',ti.size?fmtBytes(ti.size):'-')}
+        ${rowHTML('文件数',Array.isArray(ti.files)?ti.files.length:ti.file_count||'-')}
+      </table>
+    </div>`;
+  openModal('previewModal');
+}
+
+/* ═══ 模板系统 ═══ */
+let _cachedTemplates=[];
+async function loadTemplates(){
+  try{
+    const d=await api('/api/templates');
+    _cachedTemplates=d.templates||[];
+    const sel=$('templateSelect');
+    sel.innerHTML='<option value="">📋 应用模板…</option>'+
+      _cachedTemplates.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('');
+  }catch(e){addLog(`模板加载失败: ${e.message}`,'ERROR')}
+}
+function onTemplateSelected(){
+  const name=$('templateSelect').value;if(!name)return;
+  const tmpl=_cachedTemplates.find(t=>t.name===name);
+  if(tmpl&&tmpl.publish_info){applyTemplateData(tmpl.publish_info);toast(`已应用模板: ${name}`,'success');addLog(`模板已应用: ${name}`,'INFO')}
+  $('templateSelect').value='';
+}
+function applyTemplateData(pi){
+  if(pi.title)$('piTitle').value=pi.title;
+  if(pi.subtitle)$('piSubtitle').value=pi.subtitle;
+  if(pi.group_name)$('piGroup').value=pi.group_name;
+  if(pi.poster)$('piPoster').value=pi.poster;
+  if(pi.description){$('piDescEdit').value=pi.description;$('piDescPreview').innerHTML=renderMarkdown(pi.description)||'<span style="color:var(--text-muted)">(空)</span>'}
+  if(pi.tags){state.selectedTags.clear();pi.tags.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>state.selectedTags.add(t));renderTags();syncTagsText()}
+  state.formDirty=true;
+}
+function openSaveTemplateModal(){openModal('saveTemplateModal')}
+async function doSaveTemplate(){
+  const name=$('tmplName').value.trim();
+  if(!name){toast('请输入模板名称','warning');return}
+  try{
+    await api('/api/templates',{method:'POST',body:JSON.stringify({
+      name,name,
+      description:$('tmplDesc').value.trim(),
+      category:$('tmplCategory').value.trim(),
+      publish_info:getFormData(),
+    })});
+    toast(`模板 "${name}" 已保存`,'success');
+    addLog(`💾 模板已保存: ${name}`,'INFO');
+    closeModal('saveTemplateModal');
+    $('tmplName').value='';$('tmplDesc').value='';$('tmplCategory').value='';
+    await loadTemplates();
+  }catch(e){toast('保存失败: '+(e.detail||e.message),'error')}
+}
+
+/* ═══ Modal 系统 ═══ */
+function openModal(id){$(id).classList.add('show')}
+function closeModal(id){$(id).classList.remove('show')}
+
+/* ═══ 日志区拖拽调整高度 ═══ */
+(function(){
+  const handle=$('logResizeHandle'),panel=$('logPanel'),minH=80,maxH=450;
+  let startY,startH,dragging=false;
+  handle.addEventListener('mousedown',e=>{
+    dragging=true;startY=e.clientY;startH=panel.offsetHeight;
+    e.preventDefault();
+    document.body.style.cursor='ns-resize';
+    document.body.style.userSelect='none';
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const delta=startY-e.clientY;
+    panel.style.height=Math.max(minH,Math.min(maxH,startH+delta))+'px';
+  });
+  document.addEventListener('mouseup',()=>{
+    if(dragging){
+      dragging=false;
+      document.body.style.cursor='';
+      document.body.style.userSelect='';
+    }
+  });
+})();
+
+/* ═══ 初始化 ═══ */
+async function init(){
+  addLog('🚀 BT 发布控制台已启动','INFO');
+  await Promise.all([loadSites(),loadTasks(),loadTemplates()]);
+  addLog(`✅ 就绪: ${state.tasks.length} 个任务, ${state.sites.length} 个站点可用`,'INFO');
+
+  if(state.tasks.length>0){
+    const first=state.tasks.find(t=>t.status==='pending')||state.tasks[0];
+    if(first)await selectTask(first.id);
+  }
+}
+init();
+
+setInterval(async()=>{
+  if(state.currentTaskId){
+    try{
+      const task=await api(`/api/tasks/${state.currentTaskId}`);
+      showRunStatus(task);
+      if(['success','failed','permanent_failed'].includes(task.status)&&!state.isPolling){
+        loadTasks();
+      }
+    }catch(_){}
+  }
+},8000);
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+    e.preventDefault();
+    if(state.currentTaskId&&state.formDirty)savePubInfo();
+  }
+});
+
+window.addEventListener('beforeunload',e=>{
+  if(state.formDirty){
+    e.preventDefault();
+    e.returnValue='';
+  }
+});
+</script>
+</body>
+</html>
