@@ -1,2 +1,0 @@
-2026-04-04 18:28:07.081 +08:00 [INF] 正在发布 D:\BT_Automatic_Publishing_copy\data\torrents\[Studio GreenTea] Mato Seihei no Slave [21][WebRip][HEVC-10bit 1080p AAC][JPSC].torrent
-2026-04-04 18:28:07.083 +08:00 [ERR] 没有配置文件
