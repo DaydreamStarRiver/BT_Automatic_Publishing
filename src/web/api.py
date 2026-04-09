@@ -166,6 +166,9 @@ def get_status():
     """返回系统整体状态"""
     _require_queue()
     stats = _task_queue.get_statistics()
+    from src.config import get_okp_config, get_cookie_status
+    okp_cfg = get_okp_config()
+    cookie_status = get_cookie_status()
     return {
         "ok": True,
         "queue_size": _task_queue.queue_size(),
@@ -173,10 +176,13 @@ def get_status():
         "watch_dir": str(WATCH_DIR()),
         "stats": stats,
         "uptime_ts": datetime.now().isoformat(),
-        # OKP 配置状态
-        "okp_configured": bool(get_config("okp_cookies_path")) or bool(get_config("okp_setting_path")),
-        "auto_confirm": get_config("okp_auto_confirm", True),
-        "preview_mode": get_config("okp_preview_only", False),
+        "okp_configured": bool(okp_cfg.get("executable")) or bool(okp_cfg.get("cookie_path")) or bool(okp_cfg.get("setting_path")),
+        "okp_executable": okp_cfg.get("executable"),
+        "auto_confirm": okp_cfg.get("auto_confirm", True),
+        "preview_mode": okp_cfg.get("preview_only", False),
+        "cookie_configured": cookie_status["configured"],
+        "cookie_exists": cookie_status["exists"],
+        "cookie_path": cookie_status.get("resolved_path") or cookie_status.get("path"),
     }
 
 
@@ -338,10 +344,12 @@ def run_okp_manually(task_id: str, body: OKPRunBody):
     def _do_run():
         try:
             from src.core.executor_okp import OKPExecutor
-            okp_path = get_config("okp_path")
-            setting_path = get_config("okp_setting_path")
-            cookies_path = get_config("okp_cookies_path")
-            timeout = get_config("okp_timeout", 300)
+            from src.config import get_okp_config
+            okp_cfg = get_okp_config()
+            okp_path = okp_cfg.get("executable") or get_config("okp_path")
+            setting_path = okp_cfg.get("setting_path") or get_config("okp_setting_path")
+            cookies_path = okp_cfg.get("cookie_path") or get_config("okp_cookies_path")
+            timeout = okp_cfg.get("timeout") or get_config("okp_timeout", 300)
 
             # ── 多站点串行发布 ──────────────────────────────────────────────
             if is_multi and not preview_only:
@@ -862,14 +870,15 @@ def get_site_status():
         {"id": "acgnx_global", "name": "AcgnX Global", "url": "https://www.acgnx.se"},
     ]
 
-    # 检测 cookies 和 setting 状态
-    cookies_path = get_config("okp_cookies_path")
-    setting_path = get_config("okp_setting_path")
-    has_cookies = bool(cookies_path and Path(cookies_path).exists()) if cookies_path else False
+    from src.config import get_okp_config, get_cookie_status
+    okp_cfg = get_okp_config()
+    cookie_status = get_cookie_status()
+    has_cookies = cookie_status["exists"]
+    setting_path = okp_cfg.get("setting_path")
     has_setting = bool(setting_path and Path(setting_path).exists()) if setting_path else False
 
     for site in sites:
-        site["configured"] = has_cookies or has_setting  # 粗略判断
+        site["configured"] = has_cookies or has_setting
         site["cookies_ok"] = has_cookies
         site["setting_ok"] = has_setting
 
@@ -877,9 +886,25 @@ def get_site_status():
         "sites": sites,
         "global_cookies_ok": has_cookies,
         "global_setting_ok": has_setting,
-        "cookies_path": str(cookies_path) if cookies_path else None,
+        "cookies_path": cookie_status.get("resolved_path") or cookie_status.get("path"),
         "setting_path": str(setting_path) if setting_path else None,
+        "okp_executable": okp_cfg.get("executable"),
+        "okp_working_dir": okp_cfg.get("working_dir"),
     }
+
+
+@app.get("/api/cookie_status")
+def get_cookie_status_api():
+    """
+    返回 Cookie 文件的详细状态信息。
+    用于前端面板显示 Cookie 配置状态。
+    """
+    from src.config import get_cookie_status, get_okp_config
+    cookie_status = get_cookie_status()
+    okp_cfg = get_okp_config()
+    cookie_status["okp_executable"] = okp_cfg.get("executable")
+    cookie_status["okp_working_dir"] = okp_cfg.get("working_dir")
+    return cookie_status
 
 
 # ══════════════════════════════════════════════════════════════════════

@@ -47,6 +47,17 @@ tracker_urls:
   - http://t.nyaatracker.com/announce
   - http://bt.sc-ol.com:2710/announce
 
+# ========== OKP 发布配置 ==========
+okp:
+  executable: null                # OKP 可执行文件路径 (null=自动查找: 项目根目录/tools/PATH)
+  cookie_path: ./cookies.txt      # cookies.txt 路径 (null=未配置, 支持相对路径)
+  setting_path: null              # setting.toml 路径 (null=使用OKP默认)
+  working_dir: null               # OKP 工作目录 (null=OKP可执行文件所在目录)
+  timeout: 300                    # OKP 执行超时 (秒)
+  auto_confirm: true              # 自动确认模式 (-y)
+  preview_only: true              # 仅预览不发布
+
+# ========== 旧版兼容配置 (优先级低于 okp 段) ==========
 okp_path: null
 okp_setting_path: null
 okp_cookies_path: null
@@ -61,7 +72,5 @@ video_extensions:
 
 # ========== Web 面板配置 ==========
 web_enabled: true
-web_host: "0.0.0.0"   # 监听地址（0.0.0.0 = 所有网卡）
-web_port: 8080         # 端口号
-
-
+web_host: "0.0.0.0"
+web_port: 8080

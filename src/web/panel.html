@@ -281,6 +281,20 @@ body{
 .right-section:last-child{border-bottom:none}
 
 .site-list{display:flex;flex-direction:column;gap:5px}
+.cookie-status{
+  padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:8px;
+  background:var(--bg-card);border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+}
+.cookie-status.ok{border-color:var(--success);background:var(--success-bg)}
+.cookie-status.warn{border-color:var(--warning);background:var(--warning-bg)}
+.cookie-status.err{border-color:var(--error);background:var(--error-bg)}
+.cookie-status-head{display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600}
+.cookie-status-head .icon{font-size:1rem}
+.cookie-status-detail{font-size:.7rem;color:var(--text-muted);word-break:break-all}
+.cookie-status.ok .cookie-status-head{color:var(--success)}
+.cookie-status.warn .cookie-status-head{color:var(--warning)}
+.cookie-status.err .cookie-status-head{color:var(--error)}
 .site-check{
   display:flex;align-items:center;gap:8px;padding:8px 10px;
   border-radius:var(--radius-sm);border:1px solid transparent;
@@ -590,7 +604,13 @@ body{
   <!-- ═══ ③ 右侧：发布控制区 ═══ -->
   <aside class="sidebar-right">
     <div class="right-section">
-      <div class="section-title" style="border:none;padding:0;margin-bottom:10px">🌐 发布站点</div>
+      <div class="section-title" style="border:none;padding:0;margin-bottom:10px">� Cookie 状态</div>
+      <div id="cookieStatusBox">
+        <div class="cookie-status warn">
+          <div class="cookie-status-head"><span class="icon">⏳</span> 检测中...</div>
+        </div>
+      </div>
+      <div class="section-title" style="border:none;padding:0;margin:10px 0 10px 0">� 发布站点</div>
       <div class="site-list" id="siteList"></div>
     </div>
 
@@ -756,6 +776,35 @@ function setLogFilter(l){
 function clearLogs(){state.logEntries=[];renderLog()}
 
 /* ═══ 站点系统 ═══ */
+async function loadCookieStatus(){
+  try{
+    const d=await api('/api/cookie_status');
+    const box=$('cookieStatusBox');
+    if(!box)return;
+    let cls='err',icon='❌',head='Cookie 未配置',detail='';
+    if(d.configured&&d.exists){
+      cls='ok';icon='✅';head='Cookie 已配置';
+      const sz=d.size_bytes?` (${(d.size_bytes/1024).toFixed(1)} KB)`:'';
+      detail=d.resolved_path||d.path||'';detail+=sz;
+    }else if(d.configured&&!d.exists){
+      cls='warn';icon='⚠️';head='Cookie 文件不存在';
+      detail=d.resolved_path||d.path||'';
+    }else{
+      detail='请在 config.yaml 的 okp.cookie_path 中配置 cookies.txt 路径';
+    }
+    box.innerHTML=`<div class="cookie-status ${cls}">
+      <div class="cookie-status-head"><span class="icon">${icon}</span> ${head}</div>
+      ${detail?`<div class="cookie-status-detail">${esc(detail)}</div>`:''}
+    </div>`;
+  }catch(e){
+    const box=$('cookieStatusBox');
+    if(box)box.innerHTML=`<div class="cookie-status err">
+      <div class="cookie-status-head"><span class="icon">❌</span> Cookie 状态检测失败</div>
+      <div class="cookie-status-detail">${esc(e.message)}</div>
+    </div>`;
+  }
+}
+
 async function loadSites(){
   try{
     const d=await api('/api/sites');
@@ -921,6 +970,8 @@ function renderMarkdown(text){
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
   html=html
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" style="max-width:100%;border-radius:6px;margin:8px 0" onerror="this.style.display=\'none\'"/>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">$1</a>')
     .replace(/^### (.*$)/gm,'<h3 style="font-size:1.1em;font-weight:700;margin:12px 0 6px;color:var(--text-primary)">$1</h3>')
     .replace(/^## (.*$)/gm,'<h2 style="font-size:1.25em;font-weight:700;margin:14px 0 8px;color:var(--text-primary)">$1</h2>')
     .replace(/^# (.*$)/gm,'<h1 style="font-size:1.4em;font-weight:700;margin:16px 0 10px;color:var(--text-primary)">$1</h1>')
@@ -1179,7 +1230,7 @@ function closeModal(id){$(id).classList.remove('show')}
 /* ═══ 初始化 ═══ */
 async function init(){
   addLog('🚀 BT 发布控制台已启动','INFO');
-  await Promise.all([loadSites(),loadTasks(),loadTemplates()]);
+  await Promise.all([loadCookieStatus(),loadSites(),loadTasks(),loadTemplates()]);
   addLog(`✅ 就绪: ${state.tasks.length} 个任务, ${state.sites.length} 个站点可用`,'INFO');
 
   if(state.tasks.length>0){

@@ -210,19 +210,20 @@ class TaskWorker:
             task.update_status(TaskStatus.UPLOADING)
         self.task_queue.persistence.save_task(task)
 
-        okp_path = get_config("okp_path")
-        setting_path = get_config("okp_setting_path")
-        cookies_path = get_config("okp_cookies_path")
-        timeout = get_config("okp_timeout", 300)
+        from src.config import get_okp_config
+        okp_cfg = get_okp_config()
+        okp_path = okp_cfg.get("executable") or get_config("okp_path")
+        setting_path = okp_cfg.get("setting_path") or get_config("okp_setting_path")
+        cookies_path = okp_cfg.get("cookie_path") or get_config("okp_cookies_path")
+        timeout = okp_cfg.get("timeout") or get_config("okp_timeout", 300)
 
-        # v3.0: 优先使用任务级别的配置，否则使用全局默认
         auto_confirm = getattr(task, 'publish_config', None)
         if auto_confirm and hasattr(auto_confirm, 'auto_confirm'):
             auto_confirm = auto_confirm.auto_confirm
         else:
-            auto_confirm = get_config("okp_auto_confirm", True)
+            auto_confirm = okp_cfg.get("auto_confirm", True)
 
-        preview_only = get_config("okp_preview_only", False)
+        preview_only = okp_cfg.get("preview_only", False)
 
         logger.info(f"[{task_id}] 🚀 调用 OKP 发布...")
         logger.info(f"[{task_id}]    重试次数: {task.retry_count}/{task.max_retries}")
