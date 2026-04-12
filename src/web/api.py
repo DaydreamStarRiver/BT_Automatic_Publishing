@@ -254,6 +254,10 @@ class PublishInfoBody(BaseModel):
     video_codec: str = ""
     audio_codec: str = ""
     subtitle_type: str = ""
+    # v3.2 新增
+    description_md: str = ""
+    description_rendered: Optional[Dict] = None
+    description_format: str = "markdown"
 
 
 class OKPRunBody(BaseModel):
@@ -283,6 +287,9 @@ def update_publish_info(task_id: str, body: PublishInfoBody):
         video_codec=body.video_codec,
         audio_codec=body.audio_codec,
         subtitle_type=body.subtitle_type,
+        description_md=body.description_md or body.description,
+        description_rendered=body.description_rendered or {},
+        description_format=body.description_format,
     )
     _task_queue.persistence.save_task(task)
     logger.info(f"[{task_id}] 发布信息已更新: title={body.title}, tags={body.tags}")
@@ -352,12 +359,30 @@ def run_okp_manually(task_id: str, body: OKPRunBody):
     def _do_run():
         try:
             from src.core.executor_okp import OKPExecutor
+            from src.core.content_renderer import ContentRenderer
             from src.config import get_okp_config
             okp_cfg = get_okp_config()
             okp_path = okp_cfg.get("executable") or get_config("okp_path")
             setting_path = okp_cfg.get("setting_path") or get_config("okp_setting_path")
             cookies_path = okp_cfg.get("cookie_path") or get_config("okp_cookies_path")
             timeout = okp_cfg.get("timeout") or get_config("okp_timeout", 300)
+
+            # ── 发布前渲染内容 ──────────────────────────────────────────────
+            markdown = task.publish_info.description_md or task.publish_info.description
+            if markdown and sites:
+                try:
+                    renderer = ContentRenderer()
+                    render_result = renderer.render_for_sites(markdown, sites)
+                    task.publish_info.description_md = markdown
+                    task.publish_info.description_rendered = render_result.rendered_content
+                    task.publish_info.description_format = "markdown"
+                    _task_queue.persistence.save_task(task)
+                    logger.info(f"[{task_id}] 发布前内容渲染完成: sites={list(render_result.rendered_content.keys())}")
+                    if render_result.errors:
+                        for err in render_result.errors:
+                            logger.warning(f"[{task_id}] 渲染警告: {err}")
+                except Exception as e:
+                    logger.warning(f"[{task_id}] 内容渲染失败，使用原始描述: {e}")
 
             # ── 多站点串行发布 ──────────────────────────────────────────────
             if is_multi and not preview_only:
@@ -603,6 +628,144 @@ def rematch_task_title(task_id: str):
         "needs_review": task.needs_review,
         "complete_match": task.complete_match,
         "match_result": task.match_result,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  路由：内容渲染 / 站点预览（v3.2）
+# ══════════════════════════════════════════════════════════════════════
+
+@app.get("/api/render/sites")
+def get_supported_render_sites():
+    """获取所有支持的渲染站点及其格式信息"""
+    from src.core.site_adapters import get_supported_sites, get_site_format_info
+    sites = get_supported_sites()
+    result = []
+    for site in sites:
+        info = get_site_format_info(site)
+        if info:
+            result.append(info)
+    return {"ok": True, "sites": result}
+
+
+class RenderPreviewBody(BaseModel):
+    markdown: str
+    sites: Optional[list[str]] = None
+
+
+@app.post("/api/render/preview")
+def render_preview(body: RenderPreviewBody):
+    """
+    渲染预览：将 Markdown 渲染为各站点格式。
+    不修改任务数据，仅返回渲染结果供预览。
+    """
+    from src.core.content_renderer import ContentRenderer
+    renderer = ContentRenderer()
+
+    sites = body.sites or ["nyaa", "dmhy", "acgrip", "bangumi"]
+    result = renderer.render_for_sites(body.markdown, sites)
+
+    return {
+        "ok": True,
+        "preview_html": result.preview_html,
+        "rendered_content": result.rendered_content,
+        "needs_review": result.needs_review,
+        "errors": result.errors,
+    }
+
+
+@app.post("/api/render/preview_site")
+def render_preview_for_site(body: RenderPreviewBody):
+    """
+    渲染单个站点的预览。
+    返回该站点的渲染内容和格式信息。
+    """
+    from src.core.content_renderer import ContentRenderer
+    renderer = ContentRenderer()
+
+    site = body.sites[0] if body.sites else "nyaa"
+    result = renderer.render_preview_for_site(body.markdown, site)
+
+    return {"ok": True, **result}
+
+
+@app.post("/api/tasks/{task_id}/render")
+def render_task_content(task_id: str, body: RenderPreviewBody = None):
+    """
+    为任务渲染发布内容。
+    将任务的 Markdown 描述渲染为各站点格式，并保存渲染结果。
+    """
+    _require_queue()
+    task = _task_queue.persistence.get_task(task_id.upper())
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    markdown = body.markdown if body and body.markdown else task.publish_info.description_md or task.publish_info.description
+    sites = body.sites if body and body.sites else list(task.publish_config.sites) if task.publish_config.sites else ["nyaa", "dmhy", "acgrip", "bangumi"]
+
+    if not sites:
+        sites = ["nyaa", "dmhy", "acgrip", "bangumi"]
+
+    from src.core.content_renderer import ContentRenderer
+    renderer = ContentRenderer()
+    result = renderer.render_for_sites(markdown, sites)
+
+    task.publish_info.description_md = markdown
+    task.publish_info.description = markdown
+    task.publish_info.description_rendered = result.rendered_content
+    task.publish_info.description_format = "markdown"
+    _task_queue.persistence.save_task(task)
+
+    logger.info(f"[{task_id}] 内容已渲染: sites={list(result.rendered_content.keys())}, errors={len(result.errors)}")
+
+    return {
+        "ok": True,
+        "preview_html": result.preview_html,
+        "rendered_content": result.rendered_content,
+        "needs_review": result.needs_review,
+        "errors": result.errors,
+    }
+
+
+@app.get("/api/tasks/{task_id}/rendered/{site}")
+def get_task_rendered_content(task_id: str, site: str):
+    """获取任务在指定站点的已渲染内容"""
+    _require_queue()
+    task = _task_queue.persistence.get_task(task_id.upper())
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    rendered = task.publish_info.description_rendered
+    if rendered and site in rendered:
+        return {
+            "ok": True,
+            "site": site,
+            "content": rendered[site],
+            "cached": True,
+        }
+
+    markdown = task.publish_info.description_md or task.publish_info.description
+    if not markdown:
+        return {"ok": True, "site": site, "content": "", "cached": False}
+
+    from src.core.content_renderer import ContentRenderer
+    renderer = ContentRenderer()
+    result = renderer.render_preview_for_site(markdown, site)
+
+    if not rendered:
+        rendered = {}
+    rendered[site] = result.get("content", "")
+    task.publish_info.description_rendered = rendered
+    _task_queue.persistence.save_task(task)
+
+    return {
+        "ok": True,
+        "site": site,
+        "content": result.get("content", ""),
+        "format": result.get("format", ""),
+        "format_description": result.get("format_description", ""),
+        "error": result.get("error"),
+        "cached": False,
     }
 
 

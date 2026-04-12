@@ -327,6 +327,46 @@ body{
 }
 .title-review-warning .btn-sm:hover{background:var(--warning);color:#fff}
 
+/* ═══ 站点预览 ═══ */
+.site-preview-area{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-tertiary);overflow:hidden;min-height:250px;
+}
+.site-preview-tabs{
+  display:flex;border-bottom:1px solid var(--background);background:var(--bg-card);
+  overflow-x:auto;
+}
+.site-preview-tab{
+  padding:8px 14px;font-size:.76rem;font-weight:600;cursor:pointer;
+  border-right:1px solid var(--border);white-space:nowrap;
+  color:var(--text-secondary);transition:all .15s;
+  display:flex;align-items:center;gap:4px;
+}
+.site-preview-tab:hover{background:var(--bg-hover);color:var(--text-primary)}
+.site-preview-tab.active{background:var(--bg-tertiary);color:var(--accent);border-bottom:2px solid var(--accent)}
+.site-preview-tab .format-badge{
+  font-size:.6rem;padding:1px 4px;border-radius:3px;font-weight:700;
+  background:var(--bg-input);color:var(--text-muted);
+}
+.site-preview-tab.active .format-badge{background:var(--accent-dim);color:var(--accent)}
+.site-preview-content{
+  padding:12px 16px;font-size:.82rem;line-height:1.6;
+  max-height:400px;overflow-y:auto;
+}
+.site-preview-content pre{
+  white-space:pre-wrap;word-break:break-all;font-family:'Cascadia Code','Consolas',monospace;
+  font-size:.78rem;background:var(--bg-input);padding:10px;border-radius:4px;
+  margin:0;
+}
+.site-preview-content .render-error{
+  padding:8px 12px;background:var(--error-bg);color:var(--error);
+  border-radius:4px;font-size:.78rem;
+}
+.site-preview-content .render-info{
+  padding:6px 10px;background:var(--bg-input);color:var(--text-muted);
+  border-radius:4px;font-size:.72rem;margin-bottom:8px;
+}
+
 /* ═══ 右侧边栏 ═══ */
 .sidebar-right{
   width:280px;flex-shrink:0;background:var(--bg-secondary);
@@ -652,11 +692,16 @@ body{
         <div class="md-toolbar">
           <button class="md-toggle active" id="mdEditBtn" onclick="switchMD('edit')">✏️ 编辑</button>
           <button class="md-toggle" id="mdPrevBtn" onclick="switchMD('preview')">👁️ 预览</button>
+          <button class="md-toggle" id="mdSiteBtn" onclick="switchMD('site')">🌐 站点预览</button>
         </div>
         <textarea class="form-textarea" id="piDescEdit"
           placeholder="## 发布概要&#10;&#10;- 视频源信息&#10;- 制作组说明&#10;- 其他备注"
           oninput="onDescInput()" spellcheck="false" style="min-height:250px"></textarea>
         <div class="md-preview" id="piDescPreview" style="display:none;min-height:250px"></div>
+        <div class="site-preview-area" id="sitePreviewArea" style="display:none">
+          <div class="site-preview-tabs" id="sitePreviewTabs"></div>
+          <div class="site-preview-content" id="sitePreviewContent"></div>
+        </div>
 
       </div><!-- /publishFormArea -->
     </div>
@@ -955,9 +1000,17 @@ function fillPublishInfo(task){
   $('piSubtitle').value=p.subtitle||'';
   $('piGroup').value=p.group_name||'';
   $('piPoster').value=p.poster||'';
-  $('piDescEdit').value=p.description||'';
-  $('piDescPreview').innerHTML=renderMarkdown(p.description)||'<span style="color:var(--text-muted)">(空)</span>';
+  const descMd=p.description_md||p.description||'';
+  $('piDescEdit').value=descMd;
+  $('piDescPreview').innerHTML=renderMarkdown(descMd)||'<span style="color:var(--text-muted)">(空)</span>';
   $('optAutoConfirm').checked=true;
+
+  if(p.description_rendered&&Object.keys(p.description_rendered).length>0){
+    sitePreviewCache=p.description_rendered;
+  }else{
+    sitePreviewCache={};
+  }
+  currentSitePreviewTab='';
 
   state.selectedTags.clear();
   if(p.tags)p.tags.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>state.selectedTags.add(t));
@@ -967,10 +1020,14 @@ function fillPublishInfo(task){
   renderMatchInfo(task);
 }
 function getFormData(){
+  const descMd=$('piDescEdit').value;
   return{
     title:$('piTitle').value.trim(),subtitle:$('piSubtitle').value.trim(),
     group_name:$('piGroup').value.trim(),poster:$('piPoster').value.trim(),
-    description:$('piDescEdit').value,
+    description:descMd,
+    description_md:descMd,
+    description_rendered:sitePreviewCache,
+    description_format:'markdown',
     tags:[...state.selectedTags].join(', '),
   };
 }
@@ -1135,14 +1192,19 @@ function onTagsTextInput(){
 /* ═══ Markdown 编辑 & 预览（OKPGUI标准） ═══ */
 let mdTimer=null;
 function switchMD(mode){
-  const e=$('piDescEdit'),p=$('piDescPreview'),eb=$('mdEditBtn'),pb=$('mdPrevBtn');
+  const e=$('piDescEdit'),p=$('piDescPreview'),sp=$('sitePreviewArea');
+  const eb=$('mdEditBtn'),pb=$('mdPrevBtn'),sb=$('mdSiteBtn');
   if(mode==='edit'){
-    e.style.display='';p.style.display='none';
-    eb.classList.add('active');pb.classList.remove('active');
-  }else{
-    e.style.display='none';p.style.display='';
+    e.style.display='';p.style.display='none';sp.style.display='none';
+    eb.classList.add('active');pb.classList.remove('active');sb.classList.remove('active');
+  }else if(mode==='preview'){
+    e.style.display='none';p.style.display='';sp.style.display='none';
     p.innerHTML=renderMarkdown(e.value)||'<span style="color:var(--text-muted)">(空)</span>';
-    eb.classList.remove('active');pb.classList.add('active');
+    eb.classList.remove('active');pb.classList.add('active');sb.classList.remove('active');
+  }else if(mode==='site'){
+    e.style.display='none';p.style.display='none';sp.style.display='';
+    eb.classList.remove('active');pb.classList.remove('active');sb.classList.add('active');
+    loadSitePreview();
   }
 }
 function onDescInput(){
@@ -1178,7 +1240,98 @@ function renderMarkdown(text){
   return html;
 }
 
-/* ═══ AutoFill ═══ */
+/* ═══ 站点渲染预览系统 ═══ */
+let sitePreviewCache={};
+let currentSitePreviewTab='';
+
+async function loadSitePreview(){
+  const md=$('piDescEdit').value;
+  if(!md.trim()){
+    $('sitePreviewTabs').innerHTML='';
+    $('sitePreviewContent').innerHTML='<div class="render-info">请先输入 Markdown 内容</div>';
+    return;
+  }
+  try{
+    const r=await api('/api/render/preview',{
+      method:'POST',
+      body:JSON.stringify({markdown:md}),
+    });
+    sitePreviewCache=r.rendered_content||{};
+    renderSitePreviewTabs(r.rendered_content,r.errors);
+    if(!currentSitePreviewTab){
+      const sites=Object.keys(sitePreviewCache);
+      if(sites.length>0)currentSitePreviewTab=sites[0];
+    }
+    if(currentSitePreviewTab&&sitePreviewCache[currentSitePreviewTab]!==undefined){
+      showSitePreviewContent(currentSitePreviewTab);
+    }
+  }catch(e){
+    $('sitePreviewContent').innerHTML=`<div class="render-error">渲染失败: ${esc(e.detail||e.message)}</div>`;
+  }
+}
+
+function renderSitePreviewTabs(rendered,errors){
+  const tabs=$('sitePreviewTabs');
+  const siteNames={nyaa:'Nyaa',dmhy:'DMHY',acgrip:'ACG.RIP',bangumi:'Bangumi'};
+  const formatNames={plaintext:'纯文本',bbcode:'BBCode',windcode:'WindCode',markdown:'Markdown'};
+  let html='';
+  for(const[site,content]of Object.entries(rendered)){
+    const name=siteNames[site]||site;
+    const fmt=guessSiteFormat(site);
+    const fmtName=formatNames[fmt]||fmt;
+    const isActive=site===currentSitePreviewTab;
+    const hasError=errors&&errors.some(e=>e.includes(site));
+    html+=`<div class="site-preview-tab${isActive?' active':''}" onclick="showSitePreviewContent('${site}')">
+      ${name} <span class="format-badge">${fmtName}</span>${hasError?' ⚠️':''}
+    </div>`;
+  }
+  tabs.innerHTML=html;
+}
+
+function guessSiteFormat(site){
+  const map={nyaa:'plaintext',dmhy:'bbcode',acgrip:'windcode',bangumi:'markdown'};
+  return map[site]||'text';
+}
+
+function showSitePreviewContent(site){
+  currentSitePreviewTab=site;
+  const content=sitePreviewCache[site]||'';
+  const container=$('sitePreviewContent');
+  const siteNames={nyaa:'Nyaa',dmhy:'DMHY',acgrip:'ACG.RIP',bangumi:'Bangumi'};
+  const fmt=guessSiteFormat(site);
+  const fmtNames={plaintext:'纯文本',bbcode:'BBCode',windcode:'WindCode',markdown:'Markdown'};
+
+  let html=`<div class="render-info">📍 ${siteNames[site]||site} · 格式: ${fmtNames[fmt]||fmt} · 长度: ${content.length} 字符</div>`;
+
+  if(fmt==='markdown'){
+    html+=`<div class="md-preview">${renderMarkdown(content)||'<span style="color:var(--text-muted)">(空)</span>'}</div>`;
+  }else{
+    html+=`<pre>${esc(content)||'(空)'}</pre>`;
+  }
+  container.innerHTML=html;
+
+  document.querySelectorAll('.site-preview-tab').forEach(t=>{
+    t.classList.toggle('active',t.textContent.includes(siteNames[site]||site));
+  });
+}
+
+async function renderTaskContent(){
+  if(!state.currentTaskId)return;
+  const md=$('piDescEdit').value;
+  if(!md.trim()){toast('请先输入 Markdown 内容','warning');return}
+  try{
+    const r=await api(`/api/tasks/${state.currentTaskId}/render`,{
+      method:'POST',
+      body:JSON.stringify({markdown:md}),
+    });
+    sitePreviewCache=r.rendered_content||{};
+    toast('内容已渲染并保存','success');
+    addLog('✅ 内容渲染完成: '+Object.keys(r.rendered_content).join(', '),'INFO');
+    if(r.errors&&r.errors.length>0){
+      addLog('⚠️ 渲染警告: '+r.errors.join('; '),'WARN');
+    }
+  }catch(e){toast('渲染失败: '+(e.detail||e.message),'error')}
+}
 async function doAutoFill(){
   if(!state.currentTaskId){toast('请先选择任务','warning');return}
   addLog('⏳ 正在智能解析文件名和元数据…','INFO');

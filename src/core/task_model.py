@@ -134,6 +134,11 @@ class PublishInfo:
     audio_codec: str = ""                # 音频编码
     subtitle_type: str = ""             # 字幕类型
 
+    # v3.2 新增：内容渲染字段
+    description_md: str = ""             # Markdown 源文本（唯一可信源）
+    description_rendered: Dict = field(default_factory=dict)  # {site: rendered_content}
+    description_format: str = "markdown" # 源格式，固定为 markdown
+
     def to_dict(self):
         return {
             'title': self.title,
@@ -148,6 +153,9 @@ class PublishInfo:
             'video_codec': self.video_codec,
             'audio_codec': self.audio_codec,
             'subtitle_type': self.subtitle_type,
+            'description_md': self.description_md,
+            'description_rendered': self.description_rendered,
+            'description_format': self.description_format,
         }
 
     @classmethod
@@ -167,6 +175,9 @@ class PublishInfo:
             video_codec=data.get('video_codec', ''),
             audio_codec=data.get('audio_codec', ''),
             subtitle_type=data.get('subtitle_type', ''),
+            description_md=data.get('description_md', ''),
+            description_rendered=data.get('description_rendered', {}),
+            description_format=data.get('description_format', 'markdown'),
         )
 
     def to_tag_list(self) -> List[str]:
