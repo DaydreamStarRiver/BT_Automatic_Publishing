@@ -1,0 +1,319 @@
+# ============================================================
+# BT 自动发布系统 - 规则匹配配置
+# ============================================================
+# 本文件定义了文件名解析和标题归一化所需的所有映射规则。
+# 修改后无需重启，系统会在下次匹配时自动重载。
+# ============================================================
+
+# ── 字幕组别名映射 ──────────────────────────────────────────
+# pattern: 文件名中出现的原始组名（支持正则）
+# alias:   对应的中文名/标准名
+# priority: 优先级，数字越大越优先匹配
+group_aliases:
+  - pattern: "Studio GreenTea"
+    alias: "绿茶字幕组"
+    priority: 10
+
+  - pattern: "SweetSub"
+    alias: "SweetSub"
+    priority: 10
+
+  - pattern: "LoliHouse"
+    alias: "LoliHouse"
+    priority: 10
+
+  - pattern: "Moozzi2"
+    alias: "Moozzi2"
+    priority: 10
+
+  - pattern: "Ohys-Raws"
+    alias: "Ohys-Raws"
+    priority: 10
+
+  - pattern: "NC-Raws"
+    alias: "NC-Raws"
+    priority: 10
+
+  - pattern: "SubGroup"
+    alias: "SubGroup"
+    priority: 10
+
+  - pattern: "ANIME-TITLE"
+    alias: "ANIME-TITLE"
+    priority: 10
+
+  - pattern: "JPTC"
+    alias: "JPTC"
+    priority: 10
+
+  - pattern: "桜都字幕组"
+    alias: "桜都字幕组"
+    priority: 10
+
+  - pattern: "悠哈C羽字幕组"
+    alias: "悠哈C羽字幕组"
+    priority: 10
+
+  - pattern: "喵萌奶茶屋"
+    alias: "喵萌奶茶屋"
+    priority: 10
+
+  - pattern: "ANi"
+    alias: "ANi"
+    priority: 10
+
+# ── 作品名别名映射 ──────────────────────────────────────────
+# pattern: 文件名中出现的原始作品名（支持正则，建议用完整英文名）
+# chinese_name: 对应的中文名
+# priority: 优先级
+series_aliases:
+  - pattern: "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e"
+    chinese_name: "欢迎来到实力至上主义的教室"
+    priority: 10
+
+  - pattern: "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e S4"
+    chinese_name: "欢迎来到实力至上主义的教室"
+    season_override: 4
+    priority: 20
+
+  - pattern: "Oshi no Ko"
+    chinese_name: "我推的孩子"
+    priority: 10
+
+  - pattern: "Oshi no Ko S2"
+    chinese_name: "我推的孩子"
+    season_override: 2
+    priority: 20
+
+  - pattern: "Sousou no Frieren"
+    chinese_name: "葬送的芙莉莲"
+    priority: 10
+
+  - pattern: "Dungeon Meshi"
+    chinese_name: "迷宫饭"
+    priority: 10
+
+  - pattern: "Kusuriya no Hitorigoto"
+    chinese_name: "药屋少女的呢喃"
+    priority: 10
+
+  - pattern: "Kimi no Na wa"
+    chinese_name: "你的名字"
+    priority: 10
+
+  - pattern: "Frieren"
+    chinese_name: "葬送的芙莉莲"
+    priority: 5
+
+# ── 季数映射规则 ────────────────────────────────────────────
+# pattern: 匹配文件名中季数的正则
+# format: 输出格式，{n} 会被替换为数字
+season_mappings:
+  - pattern: "S(\\d+)"
+    format: "第{n}季"
+    group: 1
+
+  - pattern: "Season (\\d+)"
+    format: "第{n}季"
+    group: 1
+
+  - pattern: "第([一二三四五六七八九十\\d]+)季"
+    format: "第{n}季"
+    group: 1
+
+  - pattern: "(\\d)rd"
+    format: "第{n}季"
+    group: 1
+
+# ── 集数提取规则 ────────────────────────────────────────────
+episode_patterns:
+  - pattern: "\\[(\\d{1,3})\\]"
+    group: 1
+    priority: 10
+
+  - pattern: "EP?(\\d{1,3})"
+    group: 1
+    priority: 5
+
+  - pattern: "- (\\d{1,3})"
+    group: 1
+    priority: 3
+
+  - pattern: "第(\\d{1,3})[话集]"
+    group: 1
+    priority: 8
+
+# ── 来源映射 ────────────────────────────────────────────────
+source_mappings:
+  - pattern: "WebRip"
+    display: "WebRip"
+
+  - pattern: "WEB-DL"
+    display: "WEB-DL"
+
+  - pattern: "WEB"
+    display: "Web"
+
+  - pattern: "BDRip"
+    display: "BDRip"
+
+  - pattern: "BluRay"
+    display: "BluRay"
+
+  - pattern: "BDMV"
+    display: "BDMV"
+
+  - pattern: "TVRip"
+    display: "TVRip"
+
+  - pattern: "HDTV"
+    display: "HDTV"
+
+  - pattern: "DVD"
+    display: "DVD"
+
+# ── 分辨率/画质映射 ─────────────────────────────────────────
+quality_mappings:
+  - pattern: "2160[pP]"
+    display: "2160p"
+
+  - pattern: "1080[pP]"
+    display: "1080p"
+
+  - pattern: "720[pP]"
+    display: "720p"
+
+  - pattern: "4K"
+    display: "4K"
+
+# ── 字幕风格映射 ────────────────────────────────────────────
+subtitle_style_mappings:
+  - pattern: "ASSx2"
+    display: "简繁日内封"
+
+  - pattern: "ASSx3"
+    display: "简繁日外挂"
+
+  - pattern: "SRTx2"
+    display: "简繁内封"
+
+  - pattern: "CHS&CHT"
+    display: "简繁内封"
+
+  - pattern: "简繁"
+    display: "简繁内封"
+
+  - pattern: "简日"
+    display: "简日内封"
+
+  - pattern: "繁日"
+    display: "繁日内封"
+
+  - pattern: "CHS"
+    display: "简体内封"
+
+  - pattern: "CHT"
+    display: "繁体内封"
+
+  - pattern: "JPTC"
+    display: "简繁日内封"
+
+  - pattern: "GB"
+    display: "简体内封"
+
+  - pattern: "BIG5"
+    display: "繁体内封"
+
+  - pattern: "外挂"
+    display: "外挂字幕"
+
+# ── 视频编码映射 ────────────────────────────────────────────
+video_codec_mappings:
+  - pattern: "HEVC"
+    display: "HEVC"
+
+  - pattern: "H\\.?265"
+    display: "HEVC"
+
+  - pattern: "H\\.?264"
+    display: "H264"
+
+  - pattern: "AVC"
+    display: "H264"
+
+  - pattern: "AV1"
+    display: "AV1"
+
+  - pattern: "VP9"
+    display: "VP9"
+
+  - pattern: "10bit"
+    display: "10bit"
+
+  - pattern: "Hi10P"
+    display: "Hi10P"
+
+# ── 音频编码映射 ────────────────────────────────────────────
+audio_codec_mappings:
+  - pattern: "AAC"
+    display: "AAC"
+
+  - pattern: "FLAC"
+    display: "FLAC"
+
+  - pattern: "AC3"
+    display: "AC3"
+
+  - pattern: "DTS"
+    display: "DTS"
+
+  - pattern: "Opus"
+    display: "Opus"
+
+# ── 标题格式模板 ────────────────────────────────────────────
+# 可用变量: {group}, {chinese_title}, {season}, {original_title},
+#           {episode}, {source}, {quality}, {subtitles}
+title_format: "[{group}] {chinese_title} {season} / {original_title} [{episode}][{source}][{quality}][{subtitles}]"
+
+# 备选格式（当部分信息缺失时使用）
+title_format_partial: "[{group}] {chinese_title}{season} / {original_title} [{episode}][{source}][{quality}][{subtitles}]"
+
+# 无中文标题时的格式
+title_format_no_chinese: "[{group}] {original_title} [{episode}][{source}][{quality}][{subtitles}]"
+
+# ── 分类自动推断规则 ────────────────────────────────────────
+category_rules:
+  - keywords: ["WebRip", "WEB-DL", "WEB"]
+    category: "Anime"
+
+  - keywords: ["BluRay", "BDRip", "BDMV"]
+    category: "Anime"
+
+  - keywords: ["Music", "PV", "MV", "OP", "ED", "OST"]
+    category: "Music"
+
+  - keywords: ["Manga", "Comic"]
+    category: "Literature"
+
+# ── 标签自动补全规则 ────────────────────────────────────────
+tag_rules:
+  - condition: "quality == '2160p' or quality == '4K'"
+    tags: ["4K", "UHD"]
+
+  - condition: "quality == '1080p'"
+    tags: ["HD"]
+
+  - condition: "'Hi10P' in video_codec or '10bit' in video_codec"
+    tags: ["Hi10P"]
+
+  - condition: "'HDR' in filename"
+    tags: ["HDR"]
+
+  - condition: "'DoVi' in filename or 'DolbyVision' in filename"
+    tags: ["DoVi"]
+
+  - condition: "'Dual Audio' in filename"
+    tags: ["Dual Audio"]
+
+  - condition: "source == 'BluRay' or source == 'BDRip'"
+    tags: ["BD"]

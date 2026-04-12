@@ -272,6 +272,61 @@ body{
   font-family:'Cascadia Code','Consolas',monospace;
 }
 
+/* ═══ 候选标题 / 匹配状态 ═══ */
+.title-candidates{
+  margin-top:6px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-tertiary);overflow:hidden;
+}
+.title-candidates-header{
+  padding:6px 10px;font-size:.72rem;font-weight:600;color:var(--text-secondary);
+  background:var(--bg-card);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.title-candidates-header .match-badge{
+  font-size:.65rem;padding:1px 6px;border-radius:8px;font-weight:700;
+}
+.title-candidates-header .match-badge.full{background:var(--success-bg);color:var(--success)}
+.title-candidates-header .match-badge.partial{background:var(--warning-bg);color:var(--warning)}
+.title-candidates-header .match-badge.none{background:var(--error-bg);color:var(--error)}
+.candidate-item{
+  padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);
+  transition:background .15s;display:flex;align-items:flex-start;gap:8px;
+}
+.candidate-item:last-child{border-bottom:none}
+.candidate-item:hover{background:var(--bg-hover)}
+.candidate-item.selected{background:var(--accent-dim);border-left:3px solid var(--accent)}
+.candidate-title{
+  flex:1;font-size:.8rem;font-family:'Cascadia Code','Consolas',monospace;
+  color:var(--text-primary);word-break:break-all;line-height:1.5;
+}
+.candidate-meta{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.candidate-conf{
+  font-size:.62rem;padding:1px 5px;border-radius:8px;font-weight:700;
+}
+.candidate-conf.high{background:var(--success-bg);color:var(--success)}
+.candidate-conf.medium{background:var(--warning-bg);color:var(--warning)}
+.candidate-conf.low{background:var(--error-bg);color:var(--error)}
+.candidate-source{font-size:.6rem;color:var(--text-muted);white-space:nowrap}
+.match-info{
+  padding:6px 10px;font-size:.7rem;color:var(--text-muted);
+  background:var(--bg-input);border-top:1px solid var(--border);
+  line-height:1.5;
+}
+.match-info .match-field{color:var(--text-secondary);font-weight:500}
+.match-info .match-missing{color:var(--warning);font-weight:600}
+.title-review-warning{
+  padding:8px 12px;border-radius:var(--radius-sm);margin-top:6px;
+  background:var(--warning-bg);border:1px solid var(--warning);
+  font-size:.78rem;color:var(--warning);font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+.title-review-warning .btn-sm{
+  padding:2px 8px;border:1px solid var(--warning);border-radius:4px;
+  background:transparent;color:var(--warning);font-size:.7rem;cursor:pointer;
+  font-weight:600;transition:all .15s;margin-left:auto;
+}
+.title-review-warning .btn-sm:hover{background:var(--warning);color:#fff}
+
 /* ═══ 右侧边栏 ═══ */
 .sidebar-right{
   width:280px;flex-shrink:0;background:var(--bg-secondary);
@@ -529,6 +584,7 @@ body{
         <div class="section-title"><span class="section-num">1</span> 📝 基础信息</div>
         <div class="autofill-toolbar">
           <button class="btn-autofill" onclick="doAutoFill()">✨ 智能填充</button>
+          <button class="btn-autofill" onclick="doReMatch()" style="border-color:var(--success);color:var(--success)">🔄 重新匹配</button>
           <span style="color:var(--text-muted);font-size:.76rem">|</span>
           <div class="template-select-wrap">
             <select class="template-select" id="templateSelect" onchange="onTemplateSelected()">
@@ -540,8 +596,13 @@ body{
 
         <div class="form-grid">
           <div class="form-group full">
-            <label class="form-label">标题 <span class="hint">(必填，自动生成可修改)</span></label>
-            <input class="form-input" id="piTitle" placeholder="[Group] Title - EP## [Resolution][Codec][Audio][Sub]" oninput="onFormDirty()"/>
+            <label class="form-label">标题 <span class="hint">(必填，自动生成可修改)</span> <span class="auto-badge" id="titleAutoBadge" style="display:none">自动</span></label>
+            <input class="form-input" id="piTitle" placeholder="[Group] Title - EP## [Resolution][Codec][Audio][Sub]" oninput="onTitleInput()"/>
+            <div id="titleCandidatesArea" style="display:none"></div>
+            <div class="title-review-warning" id="titleReviewWarning" style="display:none">
+              ⚠️ 标题需要人工确认
+              <button class="btn-sm" onclick="showTitleCandidates()">查看候选</button>
+            </div>
           </div>
           <div class="form-group full">
             <label class="form-label">副标题 / Episode 信息 <span class="hint">(可选)</span></label>
@@ -902,6 +963,8 @@ function fillPublishInfo(task){
   if(p.tags)p.tags.split(',').map(s=>s.trim()).filter(Boolean).forEach(t=>state.selectedTags.add(t));
   renderTags();
   syncTagsText();
+
+  renderMatchInfo(task);
 }
 function getFormData(){
   return{
@@ -919,6 +982,135 @@ async function savePubInfo(){
   }catch(e){toast('保存失败: '+(e.detail||e.message),'error')}
 }
 function onFormDirty(){state.formDirty=true}
+
+/* ═══ 标题匹配 / 候选标题系统 ═══ */
+function onTitleInput(){
+  state.formDirty=true;
+  const badge=$('titleAutoBadge');
+  if(badge)badge.style.display='none';
+}
+
+function renderMatchInfo(task){
+  const area=$('titleCandidatesArea');
+  const warning=$('titleReviewWarning');
+  const badge=$('titleAutoBadge');
+
+  if(!task.match_result&&!task.title_candidates){
+    if(area)area.style.display='none';
+    if(warning)warning.style.display='none';
+    if(badge)badge.style.display='none';
+    return;
+  }
+
+  const mr=task.match_result||{};
+  const candidates=task.title_candidates||[];
+  const needsReview=task.needs_review;
+  const completeMatch=task.complete_match;
+
+  if(badge){
+    if(mr.manual_override){
+      badge.textContent='手动';badge.style.display='';
+    }else if(completeMatch){
+      badge.textContent='自动';badge.style.display='';
+    }else{
+      badge.textContent='部分匹配';badge.style.display='';
+    }
+  }
+
+  if(warning){
+    warning.style.display=needsReview?'flex':'none';
+  }
+
+  if(candidates.length>0&&area){
+    area.style.display='';
+    let badgeClass=completeMatch?'full':(candidates.length>1?'partial':'none');
+    let badgeText=completeMatch?'完全匹配':(needsReview?'部分匹配':'未匹配');
+
+    let html=`<div class="title-candidates">
+      <div class="title-candidates-header">
+        <span>📋 候选标题 (${candidates.length})</span>
+        <span class="match-badge ${badgeClass}">${badgeText}</span>
+      </div>`;
+
+    candidates.forEach((c,i)=>{
+      const isCurrent=c.title===task.publish_info?.title;
+      const confClass=c.confidence||'medium';
+      const confText={high:'高',medium:'中',low:'低'}[confClass]||confClass;
+      html+=`<div class="candidate-item${isCurrent?' selected':''}" onclick="applyCandidateTitle(${i})" title="${esc(c.description||'')}">
+        <div class="candidate-title">${esc(c.title)}</div>
+        <div class="candidate-meta">
+          <span class="candidate-conf ${confClass}">${confText}</span>
+          <span class="candidate-source">${esc(c.source||'')}</span>
+        </div>
+      </div>`;
+    });
+
+    if(mr&&(mr.group_alias||mr.series_chinese||mr.series_raw)){
+      html+=`<div class="match-info">`;
+      if(mr.group_alias)html+=`<span class="match-field">组:</span> ${esc(mr.group_alias)} · `;
+      if(mr.series_chinese)html+=`<span class="match-field">作品:</span> ${esc(mr.series_chinese)} · `;
+      else if(mr.series_raw)html+=`<span class="match-field">作品:</span> ${esc(mr.series_raw)} · `;
+      if(mr.season_display)html+=`<span class="match-field">季:</span> ${esc(mr.season_display)} · `;
+      if(mr.episode_display)html+=`<span class="match-field">集:</span> ${esc(mr.episode_display)} · `;
+      if(mr.source_display)html+=`<span class="match-field">来源:</span> ${esc(mr.source_display)} · `;
+      if(mr.quality_display)html+=`<span class="match-field">分辨率:</span> ${esc(mr.quality_display)} · `;
+      if(mr.subtitle_display)html+=`<span class="match-field">字幕:</span> ${esc(mr.subtitle_display)}`;
+      html+=`</div>`;
+    }
+
+    if(mr&&mr.unmatched_parts&&mr.unmatched_parts.length>0){
+      const missing=mr.unmatched_parts.filter(p=>p.startsWith('missing:')).map(p=>p.replace('missing:',''));
+      if(missing.length>0){
+        html+=`<div class="match-info"><span class="match-missing">⚠️ 缺少: ${esc(missing.join(', '))}</span></div>`;
+      }
+    }
+
+    html+=`</div>`;
+    area.innerHTML=html;
+  }else if(area){
+    area.style.display='none';
+  }
+}
+
+async function applyCandidateTitle(index){
+  if(!state.currentTaskId)return;
+  try{
+    const r=await api(`/api/tasks/${state.currentTaskId}/title_candidates`);
+    const candidates=r.candidates||[];
+    if(index>=0&&index<candidates.length){
+      const title=candidates[index].title;
+      await api(`/api/tasks/${state.currentTaskId}/title`,{
+        method:'PUT',
+        body:JSON.stringify({title,source:'candidate'}),
+      });
+      $('piTitle').value=title;
+      state.formDirty=false;
+      toast(`已应用候选标题 #${index+1}`,'success');
+      addLog(`📋 已应用候选标题: ${title}`,'INFO');
+      renderMatchInfo(await api(`/api/tasks/${state.currentTaskId}?full=true`));
+    }
+  }catch(e){toast('应用候选标题失败: '+(e.detail||e.message),'error')}
+}
+
+function showTitleCandidates(){
+  const area=$('titleCandidatesArea');
+  if(area)area.style.display=area.style.display==='none'?'':'none';
+}
+
+async function doReMatch(){
+  if(!state.currentTaskId){toast('请先选择任务','warning');return}
+  addLog('🔄 正在重新匹配规则…','INFO');
+  try{
+    const r=await api(`/api/tasks/${state.currentTaskId}/re_match`,{method:'POST'});
+    $('piTitle').value=r.title||'';
+    state.formDirty=false;
+    const task=await api(`/api/tasks/${state.currentTaskId}?full=true`);
+    renderMatchInfo(task);
+    fillPublishInfo(task);
+    toast(r.complete_match?'重新匹配完成（完全匹配）':'重新匹配完成（需确认）',r.complete_match?'success':'warning');
+    addLog(`✅ 重新匹配: ${r.title} ${r.needs_review?'(需确认)':''}`,'INFO');
+  }catch(e){toast('重新匹配失败: '+(e.detail||e.message),'error');addLog(`❌ 重新匹配失败: ${e.detail||e.message}`,'ERROR')}
+}
 
 /* ═══ Tags系统（OKPGUI标准：文本输入+Chip多选） ═══ */
 function toggleTag(chip){

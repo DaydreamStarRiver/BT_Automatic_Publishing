@@ -154,6 +154,14 @@ def _task_to_dict(task: Task, full: bool = False) -> dict:
         if task.okp_result:
             d["okp_result"] = task.okp_result.to_dict()
 
+        # v3.1 规则匹配字段
+        if task.match_result:
+            d["match_result"] = task.match_result
+        if task.title_candidates:
+            d["title_candidates"] = task.title_candidates
+        d["needs_review"] = task.needs_review
+        d["complete_match"] = task.complete_match
+
     return d
 
 
@@ -455,6 +463,146 @@ def run_okp_manually(task_id: str, body: OKPRunBody):
         "mode": body.mode,
         "preview_only": preview_only,
         "sites": sites,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  路由：规则匹配 / 标题归一化（v3.1）
+# ══════════════════════════════════════════════════════════════════════
+
+@app.get("/api/tasks/{task_id}/title_candidates")
+def get_title_candidates(task_id: str):
+    """
+    获取任务的标题候选列表。
+    基于规则匹配引擎重新解析文件名，返回所有可能的标题候选。
+    """
+    _require_queue()
+    task = _task_queue.persistence.get_task(task_id.upper())
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    if task.title_candidates:
+        return {
+            "ok": True,
+            "candidates": task.title_candidates,
+            "current_title": task.publish_info.title,
+            "needs_review": task.needs_review,
+            "complete_match": task.complete_match,
+            "match_result": task.match_result,
+        }
+
+    from src.core.rule_matcher import RuleMatcher
+    from src.core.title_normalizer import TitleNormalizer
+
+    matcher = RuleMatcher()
+    normalizer = TitleNormalizer()
+
+    match_result = matcher.match(task.video_path)
+    candidates = normalizer.generate_candidates(match_result)
+
+    task.match_result = match_result.to_dict()
+    task.title_candidates = candidates
+    task.needs_review = match_result.needs_review
+    task.complete_match = match_result.complete_match
+    _task_queue.persistence.save_task(task)
+
+    return {
+        "ok": True,
+        "candidates": candidates,
+        "current_title": task.publish_info.title,
+        "needs_review": task.needs_review,
+        "complete_match": task.complete_match,
+        "match_result": task.match_result,
+    }
+
+
+class TitleUpdateBody(BaseModel):
+    title: str
+    source: str = "manual"
+
+
+@app.put("/api/tasks/{task_id}/title")
+def update_task_title(task_id: str, body: TitleUpdateBody):
+    """
+    更新任务的发布标题。
+    支持人工覆盖自动生成的标题，覆盖后不会被自动刷新覆盖。
+    """
+    _require_queue()
+    task = _task_queue.persistence.get_task(task_id.upper())
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    old_title = task.publish_info.title
+    task.publish_info.title = body.title
+    task.needs_review = False
+    task.updated_at = datetime.now().isoformat()
+
+    if body.source == "manual":
+        task.match_result = task.match_result or {}
+        task.match_result["manual_override"] = True
+        task.match_result["override_title"] = body.title
+
+    _task_queue.persistence.save_task(task)
+    logger.info(f"[{task_id}] 标题已更新: '{old_title}' → '{body.title}' (source={body.source})")
+
+    return {
+        "ok": True,
+        "old_title": old_title,
+        "new_title": body.title,
+        "source": body.source,
+        "message": "标题已更新",
+    }
+
+
+@app.post("/api/tasks/{task_id}/re_match")
+def rematch_task_title(task_id: str):
+    """
+    重新对任务执行规则匹配。
+    强制重新解析文件名并生成标题候选。
+    """
+    _require_queue()
+    task = _task_queue.persistence.get_task(task_id.upper())
+    if not task:
+        raise HTTPException(status_code=404, detail=f"任务 {task_id} 不存在")
+
+    from src.core.rule_matcher import RuleMatcher
+    from src.core.title_normalizer import TitleNormalizer
+
+    matcher = RuleMatcher()
+    matcher.reload_config()
+    normalizer = TitleNormalizer()
+
+    match_result = matcher.match(task.video_path)
+    candidates = normalizer.generate_candidates(match_result)
+
+    task.match_result = match_result.to_dict()
+    task.title_candidates = candidates
+    task.needs_review = match_result.needs_review
+    task.complete_match = match_result.complete_match
+
+    if not task.match_result.get("manual_override"):
+        task.publish_info.title = candidates[0]["title"] if candidates else task.publish_info.title
+        if match_result.group_alias:
+            task.publish_info.group_name = match_result.group_alias
+        if match_result.category:
+            task.publish_info.category = match_result.category
+        if match_result.source_display:
+            task.publish_info.source = match_result.source_display
+        if match_result.subtitle_display:
+            task.publish_info.subtitle_type = match_result.subtitle_display
+        if match_result.auto_tags:
+            task.publish_info.tags = ", ".join(match_result.auto_tags)
+
+    _task_queue.persistence.save_task(task)
+    logger.info(f"[{task_id}] 重新匹配完成: title={task.publish_info.title}, needs_review={task.needs_review}")
+
+    return {
+        "ok": True,
+        "title": task.publish_info.title,
+        "candidates": candidates,
+        "needs_review": task.needs_review,
+        "complete_match": task.complete_match,
+        "match_result": task.match_result,
     }
 
 

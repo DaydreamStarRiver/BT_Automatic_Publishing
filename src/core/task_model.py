@@ -356,6 +356,12 @@ class Task:
     # ── v3.0 新增字段 ──────────────────────────────────────────
     publish_config: PublishConfig = field(default_factory=PublishConfig)
 
+    # ── v3.1 规则匹配字段 ──────────────────────────────────────
+    match_result: Optional[Dict] = None
+    title_candidates: Optional[list] = None
+    needs_review: bool = False
+    complete_match: bool = False
+
     @staticmethod
     def generate_id(video_path):
         return hashlib.md5(str(video_path).encode()).hexdigest()[:12].upper()
@@ -396,6 +402,14 @@ class Task:
         if self.okp_result:
             base['okp_result'] = self.okp_result.to_dict()
 
+        # v3.1 规则匹配字段
+        if self.match_result:
+            base['match_result'] = self.match_result
+        if self.title_candidates:
+            base['title_candidates'] = self.title_candidates
+        base['needs_review'] = self.needs_review
+        base['complete_match'] = self.complete_match
+
         # v3.0 新增字段
         if v3_mode:
             base['publish_config'] = self.publish_config.to_dict()
@@ -433,6 +447,12 @@ class Task:
         # v3.0 新字段
         if data.get('publish_config'):
             task.publish_config = PublishConfig.from_dict(data.get('publish_config'))
+
+        # v3.1 规则匹配字段
+        task.match_result = data.get('match_result')
+        task.title_candidates = data.get('title_candidates')
+        task.needs_review = data.get('needs_review', False)
+        task.complete_match = data.get('complete_match', False)
 
         return task
 

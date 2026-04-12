@@ -135,7 +135,15 @@ class TaskWorker:
             self.task_queue.persistence.save_task(task)
             return False
 
-        normalized = self.normalizer.normalize(video_path, raw_info)
+        try:
+            normalized = self.normalizer.normalize_with_rules(video_path, raw_info)
+        except Exception as e:
+            logger.warning(f"[{task_id}] ⚠️ 规则匹配失败，回退到基础标准化: {e}")
+            normalized = self.normalizer.normalize(video_path, raw_info)
+            normalized["match_result"] = None
+            normalized["title_candidates"] = []
+            normalized["needs_review"] = True
+            normalized["complete_match"] = False
 
         # 填充视频元信息
         task.video_meta = VideoMeta(
@@ -147,8 +155,23 @@ class TaskWorker:
             file_size=normalized["size"],
         )
 
-        # 预填发布标题（文件名作为默认 title）
-        task.publish_info = PublishInfo(title=normalized["title"])
+        # 填充发布信息（使用规则匹配生成的标题）
+        task.publish_info = PublishInfo(
+            title=normalized["title"],
+            group_name=normalized.get("group_name", ""),
+            category=normalized.get("category", ""),
+            source=normalized.get("source", ""),
+            video_codec=normalized.get("video_codec_detail", normalized["codec"]),
+            audio_codec=normalized.get("audio_codec_detail", ""),
+            subtitle_type=normalized.get("subtitle_type", ""),
+            tags=", ".join(normalized.get("auto_tags", [])),
+        )
+
+        # 填充规则匹配结果
+        task.match_result = normalized.get("match_result")
+        task.title_candidates = normalized.get("title_candidates")
+        task.needs_review = normalized.get("needs_review", False)
+        task.complete_match = normalized.get("complete_match", False)
         self.task_queue.persistence.save_task(task)
 
         logger.info(f"[{task_id}] 📦 生成 Torrent...")
