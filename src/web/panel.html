@@ -919,16 +919,58 @@ async function loadSites(){
   }catch(e){addLog(`站点加载失败: ${e.message}`,'ERROR')}
 }
 function renderSites(){
-  $('siteList').innerHTML=state.sites.map(s=>
-    `<label class="site-check${!s.configured?' disabled':''}">
-      <input type="checkbox" name="sites" value="${esc(s.id)}"${s.configured!==false?' checked':''}
-        ${!s.configured?'disabled':''} onchange="onSiteChange()"/>
-      <div class="site-info">
-        <div class="site-name">${esc(s.name)}</div>
-        <div class="site-status ${s.cookies_ok?'ok':'err'}">${s.cookies_ok?'● 已配置 Cookie':'○ 未配置'}</div>
+  $('siteList').innerHTML=state.sites.map(s=>{
+    let statusText = '○ 未配置';
+    let statusClass = 'err';
+    if(s.login_status === 'untested'){
+      statusText = '● 已配置(未探测)';
+      statusClass = 'warn'; // 可自定义 CSS
+    } else if(s.login_status === 'success'){
+      statusText = '● 探测成功';
+      statusClass = 'ok';
+    } else if(s.login_status === 'failed'){
+      statusText = '○ 探测失败';
+      statusClass = 'err';
+    }
+
+    return `<label class="site-check${!s.enabled?' disabled':''}">
+      <input type="checkbox" name="sites" value="${esc(s.id)}"${s.enabled?' checked':''}
+        ${!s.enabled?'disabled':''} onchange="onSiteChange()"/>
+      <div class="site-info" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <div>
+          <div class="site-name">${esc(s.name)}</div>
+          <div class="site-status ${statusClass}" id="status-${s.id}">${statusText}</div>
+        </div>
+        ${s.enabled ? `<button type="button" class="btn btn-sm btn-icon" style="margin-left: 10px;" onclick="event.preventDefault(); testSiteLogin('${s.id}')" title="测试连通性">🔄</button>` : ''}
       </div>
-    </label>`
-  ).join('');
+    </label>`;
+  }).join('');
+}
+
+async function testSiteLogin(siteId) {
+  try {
+    const d = await api('/api/sites/test', {
+      method: 'POST',
+      body: JSON.stringify({ site_id: siteId })
+    });
+    if (d.success) {
+      addLog(`[${siteId}] 探测成功: ${d.message}`, 'INFO');
+      const s = state.sites.find(x => x.id === siteId);
+      if (s) {
+        s.login_status = 'success';
+        renderSites();
+      }
+    } else {
+      addLog(`[${siteId}] 探测失败: ${d.message}`, 'ERROR');
+      const s = state.sites.find(x => x.id === siteId);
+      if (s) {
+        s.login_status = 'failed';
+        renderSites();
+      }
+    }
+  } catch (e) {
+    addLog(`[${siteId}] 探测请求出错: ${e.message}`, 'ERROR');
+  }
 }
 function getSelectedSites(){return[...document.querySelectorAll('input[name="sites"]:checked')].map(el=>el.value)}
 function onSiteChange(){}

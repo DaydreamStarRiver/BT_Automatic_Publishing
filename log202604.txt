@@ -1,0 +1,2 @@
+2026-04-13 14:35:26.256 +08:00 [INF] 正在发布 D:\BT_Automatic_Publishing_copy\data\torrents\[Studio GreenTea] Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e S4 [03][WebRip][HEVC-10bit 1080p AAC][JPTC].torrent
+2026-04-13 14:35:26.259 +08:00 [ERR] 没有配置文件

@@ -722,75 +722,59 @@ async def get_task_logs(
 # ══════════════════════════════════════════════════════════════════════
 
 @app.get("/api/sites", tags=["站点"])
-async def get_sites_status():
+async def get_sites_status(): 
     """
     获取支持的站点列表及其状态
 
     返回每个站点的：
       - ID、名称、URL
-      - Cookie 配置状态
+      - Cookie 配置状态       
       - 是否可用
     """
     _require_queue()
+    from src.core.site_manager import SiteManager
+    
+    status_data = SiteManager.get_site_status()
+    sites = status_data["sites"]
+    
+    # 补充 v3 专有的 icon 等字段
+    icon_map = {
+        SiteID.NYAA.value: "🔵",
+        SiteID.DMHY.value: "🌸",
+        SiteID.ACG_RIP.value: "🟢",
+        SiteID.BANGUMI.value: "🟣",
+        SiteID.ACGNX_ASIA.value: "🟡",
+        SiteID.ACGNX_GLOBAL.value: "🟠",
+    }
 
-    sites = [
-        {
-            "id": SiteID.NYAA.value,
-            "name": "Nyaa.si",
-            "url": "https://nyaa.si",
-            "icon": "🔵"
-        },
-        {
-            "id": SiteID.DMHY.value,
-            "name": "动漫花园",
-            "url": "https://share.dmhy.org",
-            "icon": "🌸"
-        },
-        {
-            "id": SiteID.ACG_RIP.value,
-            "name": "ACG.RIP",
-            "url": "https://acg.rip",
-            "icon": "🟢"
-        },
-        {
-            "id": SiteID.BANGUMI.value,
-            "name": "萌番组",
-            "url": "https://bangumi.moe",
-            "icon": "🟣"
-        },
-        {
-            "id": SiteID.ACGNX_ASIA.value,
-            "name": "AcgnX Asia",
-            "url": "https://share.acgnx.se",
-            "icon": "🟡"
-        },
-        {
-            "id": SiteID.ACGNX_GLOBAL.value,
-            "name": "AcgnX Global",
-            "url": "https://www.acgnx.se",
-            "icon": "🟠"
-        },
-    ]
-
-    # 检测 Cookie 配置状态
-    cookies_path = get_config("okp_cookies_path")
     setting_path = get_config("okp_setting_path")
-
-    has_cookies = bool(cookies_path and Path(cookies_path).exists()) if cookies_path else False
     has_setting = bool(setting_path and Path(setting_path).exists()) if setting_path else False
 
     for site in sites:
-        site["configured"] = has_cookies or has_setting
-        site["cookies_ok"] = has_cookies
+        site["icon"] = icon_map.get(site["id"], "🌐")
+        # 兼容旧版及 v3 特有字段结构
+        site["configured"] = site["has_cookie"] or has_setting
+        site["cookies_ok"] = site["has_cookie"]
         site["setting_ok"] = has_setting
 
     return {
         "sites": sites,
-        "global_cookies_ok": has_cookies,
+        "global_cookies_ok": any(s["has_cookie"] for s in sites),
         "global_setting_ok": has_setting,
-        "cookies_path": str(cookies_path) if cookies_path else None,
+        "cookies_path": status_data["cookie_path"],
         "setting_path": str(setting_path) if setting_path else None,
     }
+
+class SiteTestRequest(BaseModel):
+    site_id: str
+
+@app.post("/api/sites/test", tags=["站点"])
+async def test_site_login(req: SiteTestRequest):
+    """测试指定站点是否可用"""
+    _require_queue()
+    from src.core.site_manager import SiteManager
+    result = SiteManager.test_site_login(req.site_id)
+    return result
 
 
 # ══════════════════════════════════════════════════════════════════════

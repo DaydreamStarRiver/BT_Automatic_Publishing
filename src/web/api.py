@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 from src.config import get_config, WATCH_DIR, OUTPUT_TORRENT_DIR
 from src.core.task_model import Task, TaskStatus, PublishInfo, VideoMeta, TorrentMeta, OKPResult
+from src.core.site_manager import SiteManager
 from src.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -1168,40 +1169,43 @@ def get_web_config():
 def get_site_status():
     """
     返回可配置的站点列表和各站点的状态。
-    基于 OKP 支持的站点 + 当前 cookies/setting 的可用性推断。
+    基于 OKP 支持的站点 + cookies.txt 解析后的可用性推断。
     """
     _require_queue()
-
-    sites = [
-        {"id": "nyaa", "name": "Nyaa.si", "url": "https://nyaa.si"},
-        {"id": "dmhy", "name": "动漫花园", "url": "https://share.dmhy.org"},
-        {"id": "acgrip", "name": "ACG.RIP", "url": "https://acg.rip"},
-        {"id": "bangumi", "name": "萌番组", "url": "https://bangumi.moe"},
-        {"id": "acgnx_asia", "name": "AcgnX Asia", "url": "https://share.acgnx.se"},
-        {"id": "acgnx_global", "name": "AcgnX Global", "url": "https://www.acgnx.se"},
-    ]
-
-    from src.config import get_okp_config, get_cookie_status
+    
+    from src.config import get_okp_config
     okp_cfg = get_okp_config()
-    cookie_status = get_cookie_status()
-    has_cookies = cookie_status["exists"]
     setting_path = okp_cfg.get("setting_path")
     has_setting = bool(setting_path and Path(setting_path).exists()) if setting_path else False
 
+    status_data = SiteManager.get_site_status()
+    sites = status_data["sites"]
+    
+    # 兼容旧字段
     for site in sites:
-        site["configured"] = has_cookies or has_setting
-        site["cookies_ok"] = has_cookies
+        site["configured"] = site["has_cookie"] or has_setting
+        site["cookies_ok"] = site["has_cookie"]
         site["setting_ok"] = has_setting
 
     return {
         "sites": sites,
-        "global_cookies_ok": has_cookies,
+        "global_cookies_ok": any(s["has_cookie"] for s in sites),
         "global_setting_ok": has_setting,
-        "cookies_path": cookie_status.get("resolved_path") or cookie_status.get("path"),
+        "cookies_path": status_data["cookie_path"],
         "setting_path": str(setting_path) if setting_path else None,
         "okp_executable": okp_cfg.get("executable"),
         "okp_working_dir": okp_cfg.get("working_dir"),
     }
+
+class SiteTestRequest(BaseModel):
+    site_id: str
+
+@app.post("/api/sites/test")
+def test_site_login(req: SiteTestRequest):
+    """测试指定站点是否可用"""
+    _require_queue()
+    result = SiteManager.test_site_login(req.site_id)
+    return result
 
 
 @app.get("/api/cookie_status")
